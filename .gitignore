@@ -2,6 +2,7 @@
 Makefile
 sample
 share
+tests
 
 # Prerequisites
 *.d
