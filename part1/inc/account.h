@@ -1,5 +1,7 @@
-#ifndef ACCOUNT_H_
-#define ACCOUNT_H_
+#ifndef ACCOUNT_H
+#define ACCOUNT_H
+
+#include <pthread.h>
 
 typedef struct
 {
@@ -13,6 +15,7 @@ typedef struct
     char out_file[64];
 
     pthread_mutex_t ac_lock;
+    
 }account;
 
-#endif /* ACCOUNT_H_ */
+#endif /* ACCOUNT_H */
