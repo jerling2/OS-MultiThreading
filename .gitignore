@@ -1,6 +1,7 @@
 # My environment
 Makefile
 sample
+share
 
 # Prerequisites
 *.d
