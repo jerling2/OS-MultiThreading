@@ -3,7 +3,7 @@
 # YouTube Link: https://youtu.be/DtGrdB8wQ_8?si=ySdCCRTerYwsmuCU.
 
 BINARY = bank
-SRCDIRS = . ./src
+SRCDIRS = . ./lib
 INCDIRS = ./inc
 
 CC = gcc
