@@ -16,3 +16,11 @@ clean :
 
 tarball : clean
 	tar zcvf $(TARBALL_NAME) --transform 's,^,$(BUILD_NAME)/,' $(PARTS)
+
+stage : clean
+	@git add .
+	@git status
+
+unstage : clean
+	@git restore --staged .
+	@echo unstaged changes for commit
