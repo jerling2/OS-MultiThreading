@@ -2,20 +2,21 @@
 #define ACCOUNT_H
 
 #include <pthread.h>
+#include "list.h"
 
-typedef struct
-{
-	char account_number[17];
-	char password[9];
+typedef struct account {
+	char *account_number; // 17 bytes
+	char *password; // 9 bytes
+    char *out_file; // 64 bytes
     double balance;
     double reward_rate;
-    
-    double transaction_tracter;
-
-    char out_file[64];
-
+    double transaction_tracker;
     pthread_mutex_t ac_lock;
-    
-}account;
+} account;
+
+account *initacc(char *id, char *pass, char *outfile, double balance,
+    double reward_rate, double transaction_tracker);
+void freeacc(account *acc);
+account *find(list *acclist, char *accnum);
 
 #endif /* ACCOUNT_H */
