@@ -26,3 +26,4 @@ $(BINARY) : $(OBJECTS)
 
 clean :
 	@rm -f $(BINARY) $(OBJECTS) $(DEPFILES)
+	@find . -name .DS_Store -delete

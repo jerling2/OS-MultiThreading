@@ -93,7 +93,6 @@ void *dequeue(list *l)
 
 void freelist(list *l, freefun freemem)
 {
-    node *cnode = NULL;
     void *data;
     
     if (l == NULL) {
