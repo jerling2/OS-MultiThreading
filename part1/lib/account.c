@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -5,8 +6,8 @@
 #include "list.h"
 
 
-account *initacc(char *id, char *pass, char *outfile, double balance,
-    double reward_rate, double transaction_tracker)
+account *initacc(char *id, char *pass, char *outfile, double balance, 
+    double reward_rate)
 {
     account *newacc;
     newacc = (account *)malloc(sizeof(account));
@@ -15,11 +16,12 @@ account *initacc(char *id, char *pass, char *outfile, double balance,
     newacc->out_file = strdup(outfile);
     newacc->balance = balance;
     newacc->reward_rate = reward_rate;
-    newacc->transaction_tracker = transaction_tracker;
+    newacc->transaction_tracker = 0;
     if (pthread_mutex_init(&(newacc->ac_lock), NULL) != 0) {
         free(newacc); // Free memory if mutex initialization fails
         return NULL;
     }
+    printf("\x1b[1;35mAccount Created %s\x1b[0m\n", id);
     return newacc;
 }
 

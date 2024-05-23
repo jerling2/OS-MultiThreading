@@ -15,7 +15,7 @@ typedef struct account {
 } account;
 
 account *initacc(char *id, char *pass, char *outfile, double balance,
-    double reward_rate, double transaction_tracker);
+    double reward_rate);
 void freeacc(account *acc);
 account *find(list *acclist, char *accnum);
 

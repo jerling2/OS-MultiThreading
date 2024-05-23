@@ -2,7 +2,7 @@
 #include "list.h"
 
 
-list *initlist()
+list *initList()
 {
     list *newlist;
     newlist = (list *)malloc(sizeof(list));
@@ -91,7 +91,7 @@ void *dequeue(list *l)
 }
 
 
-void freelist(list *l, freefun freemem)
+void freeList(list *l, freefun freemem)
 {
     void *data;
     
@@ -102,4 +102,58 @@ void freelist(list *l, freefun freemem)
         freemem(data); 
     }
     free(l);
+}
+
+
+// Dan Bernstein's DJB2 Hash Algorithm (http://www.cse.yorku.ca/~oz/hash.html)
+unsigned long 
+hash(unsigned char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    while (c = *str++)
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
+
+hashmap *initHashmap(int size)
+{
+    hashmap *hm;
+    int i;
+    
+    hm = (hashmap *) malloc (sizeof(hashmap));
+    hm->size = size;
+    hm->map = (list **) malloc(sizeof(list *)*size);
+    for (i = 0; i<size; i++) {
+        hm->map[i] = NULL;
+    }
+    return hm;
+}
+
+
+void freeHashmap(hashmap *hm, freefun freemem)
+{
+    int i;
+
+    for (i = 0; i<hm->size; i++) {
+        if (hm->map[i] == NULL)
+            freeList(hm->map[i], freemem);
+    }
+    free(hm);
+}
+
+
+void insert(hashmap *hm, unsigned char *key, void *data)
+{
+    unsigned long hashvalue;
+    int index;
+
+    hashvalue = hash(key);
+    index = hashvalue % hm->size;
+    if (hm->map[index] == NULL)
+        hm->map[index] = initList();
+    enqueue(hm->map[index], data);
 }
