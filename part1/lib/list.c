@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "list.h"
 
 
@@ -112,17 +113,17 @@ hash(unsigned char *str)
     unsigned long hash = 5381;
     int c;
 
-    while (c = *str++)
+    while ((c = *str++))
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
 
     return hash;
 }
 
 
-hashmap *initHashmap(int size)
+hashmap *initHashmap(unsigned int size)
 {
     hashmap *hm;
-    int i;
+    unsigned int i;
     
     hm = (hashmap *) malloc (sizeof(hashmap));
     hm->size = size;
@@ -136,24 +137,44 @@ hashmap *initHashmap(int size)
 
 void freeHashmap(hashmap *hm, freefun freemem)
 {
-    int i;
+    unsigned int i;
 
     for (i = 0; i<hm->size; i++) {
-        if (hm->map[i] == NULL)
+        if (hm->map[i] != NULL)
             freeList(hm->map[i], freemem);
     }
+    free(hm->map);
     free(hm);
 }
 
 
-void insert(hashmap *hm, unsigned char *key, void *data)
+void insert(hashmap *hm, char *key, void *data)
 {
     unsigned long hashvalue;
     int index;
 
-    hashvalue = hash(key);
+    hashvalue = hash((unsigned char *) key);
     index = hashvalue % hm->size;
     if (hm->map[index] == NULL)
         hm->map[index] = initList();
+    else
+        printf("\x1b[1;31mCollision!\x1b[0m");
     enqueue(hm->map[index], data);
+}
+
+// Credit: seander@cs.stanford.edu
+// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2.
+unsigned int nextPowerOf2(unsigned int number)
+{
+    unsigned int v; // compute the next highest power of 2 of 32-bit v
+
+    v = number;
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
 }

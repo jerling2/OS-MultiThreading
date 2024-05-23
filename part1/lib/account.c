@@ -21,7 +21,6 @@ account *initacc(char *id, char *pass, char *outfile, double balance,
         free(newacc); // Free memory if mutex initialization fails
         return NULL;
     }
-    printf("\x1b[1;35mAccount Created %s\x1b[0m\n", id);
     return newacc;
 }
 
@@ -35,14 +34,24 @@ void freeacc(account *acc)
 }
 
 
-account *find(list *acclist, char *accnum)
+account *find(hashmap *account_hm, char *account_id)
 {
+    unsigned long hashvalue;
+    int index;
+    list *l;
+    node *cnode;
     account *ac;
-    node *cnode = NULL;
-    while ((ac=(account *)inorder(acclist, &cnode))!= NULL) {
-        if (strcmp(ac->account_number, accnum) == 0) {
+    
+    cnode = NULL;
+    hashvalue = hash((unsigned char *) account_id);
+    index = hashvalue % account_hm->size;
+    if ((l = account_hm->map[index]) == NULL)
+        return NULL;
+    while ((ac=(account *)inorder(l, &cnode))!= NULL) {
+        if (strcmp(ac->account_number, account_id) == 0) {
             return ac;
         }
     }
-    return ac;
+    return NULL;
 }
+

@@ -7,7 +7,7 @@
 #define CRITICAL "\x1b[1;31mCritical\x1b[0m"
 
 
-int getAccounts(char *filename)
+hashmap *getAccounts(char *filename)
 {
     FILE *stream;
     int maxindex = -1;
@@ -16,21 +16,29 @@ int getAccounts(char *filename)
     int k = 0;
     char line[BUFSIZ];
 
+    hashmap *account_hashmap;
+    unsigned int hashmap_size;
+    account *ac;
+
     char acnumber[17];
     char password[9];
     char outfile[64];
     double balance;
     double rewardrate;
 
+
+    account_hashmap = NULL;
     if ((stream = fopen(filename, "r")) == NULL) {
         perror("\x1b[1;31mCritical\x1b[0m fopen()");
-        return -1;
+        return NULL;
     }
     if (extractitem(stream, "%d", &maxindex) == -1) {
         fprintf(stderr, "%s %s in %s:%d\n", 
         CRITICAL, "expecting total # accounts (int)", filename, i);
         goto error;
     }
+    hashmap_size = nextPowerOf2(maxindex) * 2;
+    account_hashmap = initHashmap(hashmap_size);
     i ++;
     while (fgets(line, BUFSIZ, stream) != NULL && cindex + 1 < maxindex) {
         sscanf(line, "index %d", &cindex);
@@ -60,17 +68,19 @@ int getAccounts(char *filename)
             goto error;
         }
         snprintf(outfile, 64, "account_%d_%s.log", cindex, acnumber);
-        initacc(acnumber, password, outfile, balance, rewardrate);
+        ac = initacc(acnumber, password, outfile, balance, rewardrate);
+        insert(account_hashmap, acnumber, ac);
         i += 5;
         k ++;
     }
     fclose(stream);
-    return 1;
+    return account_hashmap;
 
     error:
     fclose(stream);
-    // free(acclist);
-    return -1;
+    if (account_hashmap != NULL)
+        freeHashmap(account_hashmap, (void *)freeacc);
+    return NULL;
 }
 
 

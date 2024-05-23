@@ -2,7 +2,7 @@
 #define LIST_H
 
 typedef struct hashmap {
-    int size;
+    unsigned int size;
     struct list **map;
 } hashmap;
 
@@ -30,8 +30,10 @@ void freeList(list *l, freefun release);
 // Dan Bernstein's DJB2 Hash Algorithm (http://www.cse.yorku.ca/~oz/hash.html)
 unsigned long hash(unsigned char *str);
 
-hashmap *initHashmap(int size);
+hashmap *initHashmap(unsigned int size);
 void freeHashmap(hashmap *hm, freefun freemem);
+void insert(hashmap *hm, char *key, void *data);
 
+unsigned int nextPowerOf2(unsigned int number);
 
 #endif /* QUEUE_H */
