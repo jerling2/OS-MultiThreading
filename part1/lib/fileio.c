@@ -1,48 +1,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "fileio.h"
 #include "account.h"
 #include "list.h"
+#include "parser.h"
 #define CRITICAL "\x1b[1;31mCritical\x1b[0m"
+#define ERROR "\x1b[1;ERROR\x1b[0m"
 
 
-hashmap *getAccounts(char *filename)
+hashmap *getAccounts(FILE *stream, char *filename)
 {
-    FILE *stream;
-    int maxindex = -1;
-    int cindex = -1;
-    int i = 1;
-    int k = 0;
-    char line[BUFSIZ];
-
-    hashmap *account_hashmap;
-    unsigned int hashmap_size;
-    account *ac;
-
-    char acnumber[17];
-    char password[9];
-    char outfile[64];
-    double balance;
-    double rewardrate;
-
+    hashmap *account_hashmap;     // Result account hashmap.
+    unsigned int hashmap_size;    // Result account hashmap size.
+    account *ac;                  // A pointer to an account.
+    char acnumber[17];            // Temp buffer to hold the account number.
+    char password[9];             // Temp buffer to hold the accound password.
+    char outfile[64];             // Temp buffer to hold the outfile path.
+    double balance;               // Account balance.
+    double rewardrate;            // Account reward rate.
+    int maxindex = -1;            // Max number of accounts.
+    int cindex = -1;              // Current account.
+    int i = 1;                    // Line number.
+    int k = 0;                    // Next expected index number.
 
     account_hashmap = NULL;
-    if ((stream = fopen(filename, "r")) == NULL) {
-        perror("\x1b[1;31mCritical\x1b[0m fopen()");
-        return NULL;
-    }
     if (extractitem(stream, "%d", &maxindex) == -1) {
-        fprintf(stderr, "%s %s in %s:%d\n", 
+        fprintf(stderr, "%s %s %s:%d\n", 
         CRITICAL, "expecting total # accounts (int)", filename, i);
         goto error;
     }
     hashmap_size = nextPowerOf2(maxindex) * 2;
     account_hashmap = initHashmap(hashmap_size);
     i ++;
-    while (fgets(line, BUFSIZ, stream) != NULL && cindex + 1 < maxindex) {
-        sscanf(line, "index %d", &cindex);
-        if (cindex != k) {
+    while (cindex + 1 < maxindex) {
+        if (extractitem(stream, "index %d", &cindex) == -1 || cindex != k) {
             fprintf(stderr, "%s %s %d' in %s:%d\n", 
             CRITICAL, "expecting 'index", k, filename, i);
             goto error;
@@ -73,15 +66,29 @@ hashmap *getAccounts(char *filename)
         i += 5;
         k ++;
     }
-    fclose(stream);
     return account_hashmap;
 
     error:
-    fclose(stream);
     if (account_hashmap != NULL)
         freeHashmap(account_hashmap, (void *)freeacc);
     return NULL;
 }
+
+
+cmd *readRequest (FILE *stream)
+{
+    char line[BUFSIZ];    // The line read from a file stream.
+    cmd *command;
+
+    command = NULL;
+    if (fgets(line, BUFSIZ, stream) != NULL) {
+        command = parseline(line, " ");                               
+    }
+    if (errno != 0) {              
+        fprintf(stderr, "%s readcmd(): %s\n", ERROR, strerror(errno));
+    }
+    return command;
+}   /* readfile */
 
 
 int extractitem(FILE *stream, char *pattern, void *data)

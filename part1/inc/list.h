@@ -7,7 +7,7 @@ typedef struct hashmap {
 } hashmap;
 
 typedef struct list {
-    int size;
+    unsigned int size;
     struct node *head;
     struct node *tail;
 } list;
