@@ -4,6 +4,9 @@ sample
 share
 tests
 
+# Visual Studio Code
+.vscode/
+
 # Prerequisites
 *.d
 
