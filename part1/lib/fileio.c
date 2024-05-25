@@ -7,7 +7,7 @@
 #include "list.h"
 #include "parser.h"
 #define CRITICAL "\x1b[1;31mCritical\x1b[0m"
-#define ERROR "\x1b[1;ERROR\x1b[0m"
+#define ERROR "\x1b[1;31mERROR\x1b[0m"
 
 
 hashmap *getAccounts(FILE *stream, char *filename)
