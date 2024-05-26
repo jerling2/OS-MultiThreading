@@ -5,6 +5,7 @@
 #include "account.h"
 #include "parser.h"
 #include "request.h"
+#include "config.h"
 
 
 int commandInterpreter(hashmap *hm, cmd *command)
@@ -14,6 +15,7 @@ int commandInterpreter(hashmap *hm, cmd *command)
     int numarg;
     account *a1;
     account *a2;
+    double funds;
 
     op = command->argv[0];
     argv = command->argv;
@@ -22,18 +24,25 @@ int commandInterpreter(hashmap *hm, cmd *command)
         return -1;
     if ((a1 = find(hm, argv[1])) == NULL)
         return -1;
-    if (verify_password(a1, argv[2]) == -1)
-        return -1;
+    if (verify_password(a1, argv[2]) == -1) {
+        return 1;  // Not a error.
+    }
     if (strcmp(op, "T") == 0 && numarg == 4) {
         if ((a2 = find(hm, argv[3])) == NULL)
             return -1;
-        transfer(a1, a2, strtod(argv[4], NULL));
+        funds = strtod(argv[4], NULL);
+        transfer(a1, a2, funds);
+        a1->transaction_tracker += funds;
     } else 
     if (strcmp(op, "W") == 0 && numarg == 3) {
-        withdraw(a1, strtod(argv[3], NULL));
+        funds = strtod(argv[3], NULL);
+        withdraw(a1, funds);
+        a1->transaction_tracker += funds;
     } else
     if (strcmp(op, "D") == 0 && numarg == 3) {
-        deposit(a1, strtod(argv[3], NULL));
+        funds = strtod(argv[3], NULL);
+        deposit(a1, funds);
+        a1->transaction_tracker += funds;
     } else
     if (strcmp(op, "C") == 0 && numarg == 2) {
         check(a1);
@@ -61,7 +70,6 @@ void transfer(account *acc1, account *acc2, double funds)
 
 void withdraw(account *acc, double funds)
 {
-    // Add #funds to acc
     acc->balance -= funds;
 }
 

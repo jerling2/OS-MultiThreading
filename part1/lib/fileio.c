@@ -9,8 +9,8 @@
 #define CRITICAL "\x1b[1;31mCritical\x1b[0m"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 
-
-hashmap *getAccounts(FILE *stream, char *filename)
+// returns a list of accounts. 
+hashmap *getAccounts(FILE *stream, char *filename, account ***acs, int *numac)
 {
     hashmap *account_hashmap;     // Result account hashmap.
     unsigned int hashmap_size;    // Result account hashmap size.
@@ -31,6 +31,9 @@ hashmap *getAccounts(FILE *stream, char *filename)
         CRITICAL, "expecting total # accounts (int)", filename, i);
         goto error;
     }
+
+    (*acs) = (account **)malloc(sizeof(account *)*maxindex);
+    (*numac) = 0;
     hashmap_size = nextPowerOf2(maxindex) * 2;
     account_hashmap = initHashmap(hashmap_size);
     i ++;
@@ -63,14 +66,18 @@ hashmap *getAccounts(FILE *stream, char *filename)
         snprintf(outfile, 64, "account_%d_%s.log", cindex, acnumber);
         ac = initacc(acnumber, password, outfile, balance, rewardrate);
         insert(account_hashmap, acnumber, ac);
+        (*acs)[cindex] = ac;
+        (*numac)++;
         i += 5;
         k ++;
     }
     return account_hashmap;
 
     error:
-    if (account_hashmap != NULL)
+    if (account_hashmap != NULL) {
         freeHashmap(account_hashmap, (void *)freeacc);
+    }
+    free(acs);
     return NULL;
 }
 

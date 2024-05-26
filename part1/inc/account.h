@@ -16,7 +16,9 @@ typedef struct account {
 
 account *initacc(char *id, char *pass, char *outfile, double balance,
     double reward_rate);
+
 void freeacc(account *acc);
+
 account *find(hashmap *account_hm, char *account_id);
 
 #endif /* ACCOUNT_H */
