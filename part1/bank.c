@@ -24,7 +24,6 @@ int main (int argc, char *argv[])
     int numacs;
     cmd *request;
     int line_number;
-    int i;
 
     if (argc != 2) {                                         // Validate Input.
         fprintf(stderr, USUAGE, ERROR, argv[0]);
@@ -47,8 +46,8 @@ int main (int argc, char *argv[])
         freecmd(request);
         line_number ++;
     }
-    for (i = 0; i<numacs; i++)
-        printf("%d balance:\t%.2f\n", i, account_array[i]->balance + account_array[i]->transaction_tracker * account_array[i]->reward_rate);
+    update_balance(account_array, numacs);
+    print_balances(account_array, numacs);
     freeHashmap(account_hashmap, (void *)freeacc);
     free(account_array);
     fclose(stream);

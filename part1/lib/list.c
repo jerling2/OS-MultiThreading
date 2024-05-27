@@ -139,6 +139,8 @@ void freeHashmap(hashmap *hm, freefun freemem)
 {
     unsigned int i;
 
+    if (hm == NULL)
+        return;
     for (i = 0; i<hm->size; i++) {
         if (hm->map[i] != NULL)
             freeList(hm->map[i], freemem);

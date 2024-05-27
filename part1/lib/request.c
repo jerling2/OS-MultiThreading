@@ -21,15 +21,15 @@ int commandInterpreter(hashmap *hm, cmd *command)
     argv = command->argv;
     numarg = command->size - 2;
     if (op == NULL || numarg < 2)
-        return -1;
+        return -1;                          // ERROR: Incorrect request syntax.
     if ((a1 = find(hm, argv[1])) == NULL)
-        return -1;
+        return -1;                          // ERROR: Could not find account 1.
     if (verify_password(a1, argv[2]) == -1) {
-        return 1;  // Not a error.
+        return 1;
     }
     if (strcmp(op, "T") == 0 && numarg == 4) {
         if ((a2 = find(hm, argv[3])) == NULL)
-            return -1;
+            return -1;                      // ERROR: Could not find account 2.
         funds = strtod(argv[4], NULL);
         transfer(a1, a2, funds);
         a1->transaction_tracker += funds;
@@ -47,7 +47,7 @@ int commandInterpreter(hashmap *hm, cmd *command)
     if (strcmp(op, "C") == 0 && numarg == 2) {
         check(a1);
     } else {
-        return -1;
+        return -1;                              // ERROR: Unrecognized request.
     }
     return 1;
 }
@@ -80,11 +80,24 @@ void deposit(account *acc, double funds)
 }
 
 
+void update_balance(account **account_array, int numacs)
+{
+    double reward;
+    int i;
+
+    for (i = 0; i<numacs; i++) {
+        reward = account_array[i]->transaction_tracker;
+        reward *= account_array[i]->reward_rate;
+        account_array[i]->balance += reward;
+    }
+}
+
+
 void check(account *acc)
 {
     FILE *stream;
 
-    stream = fopen(acc->out_file, "w");
+    stream = fopen(acc->out_file, "a");
     fprintf(stream, "balance: %.2f\n", acc->balance);
     fflush(stream);
     fclose(stream);

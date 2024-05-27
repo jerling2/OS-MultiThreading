@@ -9,7 +9,9 @@
 account *initacc(char *id, char *pass, char *outfile, double balance, 
     double reward_rate)
 {
+    FILE *logfile;
     account *newacc;
+
     newacc = (account *)malloc(sizeof(account));
     newacc->account_number = strdup(id);
     newacc->password = strdup(pass);
@@ -21,6 +23,8 @@ account *initacc(char *id, char *pass, char *outfile, double balance,
         free(newacc); // Free memory if mutex initialization fails
         return NULL;
     }
+    logfile = fopen(outfile, "w");
+    fclose(logfile);
     return newacc;
 }
 
@@ -53,5 +57,15 @@ account *find(hashmap *account_hm, char *account_id)
         }
     }
     return NULL;
+}
+
+
+void print_balances(account **account_array, int numacs)
+{
+    int i;
+
+    for (i = 0; i<numacs; i++)
+        printf("%d balance:\t%.2f\n", i, account_array[i]->balance);
+    return;
 }
 

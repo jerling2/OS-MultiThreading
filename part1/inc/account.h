@@ -21,4 +21,6 @@ void freeacc(account *acc);
 
 account *find(hashmap *account_hm, char *account_id);
 
+void print_balances(account **account_array, int numacs);
+
 #endif /* ACCOUNT_H */

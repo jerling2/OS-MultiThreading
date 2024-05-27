@@ -16,4 +16,6 @@ void withdraw(account *acc, double funds);
 
 void check(account *acc);
 
+void update_balance(account **account_array, int numacs);
+
 #endif

@@ -7,6 +7,8 @@
 #include "list.h"
 #include "parser.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
+#define LOGFILE "log/account_%d.log"       //< IMPORTANT: directory must exist.
+
 
 // returns a list of accounts. 
 void getAccounts(FILE *stream, char *filename, 
@@ -25,6 +27,8 @@ void getAccounts(FILE *stream, char *filename,
     int k = 0;                    // Next expected index number.
 
     (*numac) = 0;
+    (*account_hashmap) = NULL;
+    (*acs) = NULL;
     if (extractitem(stream, "%d", &maxindex) == -1) {
         fprintf(stderr, "%s %s %s:%d\n", 
         ERROR, "missing total # accounts (int)", filename, i);
@@ -60,7 +64,7 @@ void getAccounts(FILE *stream, char *filename,
             ERROR, "missing account reward rate (double)", filename, i+4);
             goto error;
         }
-        snprintf(outfile, 64, "account_%d_%s.log", cindex, acnumber);
+        snprintf(outfile, 64, LOGFILE, cindex);
         ac = initacc(acnumber, password, outfile, balance, rewardrate);
         insert((*account_hashmap), acnumber, ac);
         (*acs)[cindex] = ac;
@@ -71,9 +75,7 @@ void getAccounts(FILE *stream, char *filename,
     return;
 
     error:
-    if ((*account_hashmap) != NULL) {
-        freeHashmap((*account_hashmap), (void *)freeacc);
-    }
+    freeHashmap((*account_hashmap), (void *)freeacc);
     free(*acs);
     (*numac) = 0;
     return;
