@@ -10,6 +10,9 @@
 #include "config.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define WARNING "\x1b[1;31mWARNING\x1b[0m"
+#define USUAGE "%s usuage %s <filename>\n"
+#define STREAM "%s could not open '%s'. %s.\n"
+#define REQUEST "%s invalid request %s:%d.\n"
 
 
 int main (int argc, char *argv[]) 
@@ -20,33 +23,32 @@ int main (int argc, char *argv[])
     account **account_array;
     int numacs;
     cmd *request;
+    int line_number;
     int i;
 
-    if (argc != 2) {
-        printf("%s usuage %s <filename>\n", ERROR, argv[0]);
-        exit(EXIT_FAILURE);
+    if (argc != 2) {                                         // Validate Input.
+        fprintf(stderr, USUAGE, ERROR, argv[0]);
+        exit(EXIT_FAILURE); 
     }
     filename = argv[1];
-    if ((stream = fopen(filename, "r")) == NULL) {
-        printf("%s %s\n", ERROR, strerror(errno));
+    if ((stream = fopen(filename, "r")) == NULL) {              // Open stream.
+        printf(STREAM, ERROR, filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
-    account_hashmap = getAccounts(stream, filename, &account_array, &numacs);
-    if (account_hashmap == NULL) {
+    getAccounts(stream, filename, &account_hashmap, &account_array, &numacs);
+    if (numacs == 0) {                              // Handle getAccount Error.
         fclose(stream);
         exit(EXIT_FAILURE);   
     }
-    i = numacs * 5 + 2;  // total accounts * lines per account init + maxindex + one-index.
+    line_number = numacs * 5 + 2;                     // Line number for DEBUG.
     while ((request = readRequest(stream)) != NULL) {
-        if (commandInterpreter(account_hashmap, request) == -1) {
-            printf("%s:%d\n", filename, i);
-        }
+        if (commandInterpreter(account_hashmap, request) == -1)
+            fprintf(stderr, REQUEST, WARNING, filename, line_number); // DEBUG.
         freecmd(request);
-        i ++;
+        line_number ++;
     }
-    for (i = 0; i<numacs; i++) {
+    for (i = 0; i<numacs; i++)
         printf("%d balance:\t%.2f\n", i, account_array[i]->balance + account_array[i]->transaction_tracker * account_array[i]->reward_rate);
-    }
     freeHashmap(account_hashmap, (void *)freeacc);
     free(account_array);
     fclose(stream);

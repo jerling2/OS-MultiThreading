@@ -6,13 +6,12 @@
 #include "account.h"
 #include "list.h"
 #include "parser.h"
-#define CRITICAL "\x1b[1;31mCritical\x1b[0m"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 
 // returns a list of accounts. 
-hashmap *getAccounts(FILE *stream, char *filename, account ***acs, int *numac)
+void getAccounts(FILE *stream, char *filename, 
+    hashmap **account_hashmap, account ***acs, int *numac)
 {
-    hashmap *account_hashmap;     // Result account hashmap.
     unsigned int hashmap_size;    // Result account hashmap size.
     account *ac;                  // A pointer to an account.
     char acnumber[17];            // Temp buffer to hold the account number.
@@ -25,60 +24,59 @@ hashmap *getAccounts(FILE *stream, char *filename, account ***acs, int *numac)
     int i = 1;                    // Line number.
     int k = 0;                    // Next expected index number.
 
-    account_hashmap = NULL;
+    (*numac) = 0;
     if (extractitem(stream, "%d", &maxindex) == -1) {
         fprintf(stderr, "%s %s %s:%d\n", 
-        CRITICAL, "expecting total # accounts (int)", filename, i);
+        ERROR, "missing total # accounts (int)", filename, i);
         goto error;
     }
-
     (*acs) = (account **)malloc(sizeof(account *)*maxindex);
-    (*numac) = 0;
     hashmap_size = nextPowerOf2(maxindex) * 2;
-    account_hashmap = initHashmap(hashmap_size);
+    (*account_hashmap) = initHashmap(hashmap_size);
     i ++;
     while (cindex + 1 < maxindex) {
         if (extractitem(stream, "index %d", &cindex) == -1 || cindex != k) {
             fprintf(stderr, "%s %s %d' in %s:%d\n", 
-            CRITICAL, "expecting 'index", k, filename, i);
+            ERROR, "missing 'index", k, filename, i);
             goto error;
         }
         if (extractitem(stream, "%17s", acnumber) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
-            CRITICAL, "expecting account number (char *)", filename, i+1);
+            ERROR, "missing account number (char *)", filename, i+1);
             goto error;
         }
         if (extractitem(stream, "%9s", password) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
-            CRITICAL, "expecting account password (char *)", filename, i+2);
+            ERROR, "missing account password (char *)", filename, i+2);
             goto error;
         }
         if (extractitem(stream, "%lf", &balance) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
-            CRITICAL, "expecting account balance (double)", filename, i+3);
+            ERROR, "missing account balance (double)", filename, i+3);
             goto error;
         }
         if (extractitem(stream, "%lf", &rewardrate) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
-            CRITICAL, "expecting account reward rate (double)", filename, i+4);
+            ERROR, "missing account reward rate (double)", filename, i+4);
             goto error;
         }
         snprintf(outfile, 64, "account_%d_%s.log", cindex, acnumber);
         ac = initacc(acnumber, password, outfile, balance, rewardrate);
-        insert(account_hashmap, acnumber, ac);
+        insert((*account_hashmap), acnumber, ac);
         (*acs)[cindex] = ac;
         (*numac)++;
         i += 5;
         k ++;
     }
-    return account_hashmap;
+    return;
 
     error:
-    if (account_hashmap != NULL) {
-        freeHashmap(account_hashmap, (void *)freeacc);
+    if ((*account_hashmap) != NULL) {
+        freeHashmap((*account_hashmap), (void *)freeacc);
     }
-    free(acs);
-    return NULL;
+    free(*acs);
+    (*numac) = 0;
+    return;
 }
 
 

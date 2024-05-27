@@ -5,7 +5,8 @@
 #include "parser.h"
 #include "account.h"
 
-hashmap *getAccounts(FILE *stream, char *filename, account ***acs, int *numac);
+void getAccounts(FILE *stream, char *filename, 
+    hashmap **account_hashmap, account ***acs, int *numac);
 
 cmd *readRequest(FILE *stream);
 
