@@ -3,6 +3,7 @@
 # YouTube Link: https://youtu.be/DtGrdB8wQ_8?si=ySdCCRTerYwsmuCU.
 
 BINARY = bank
+LOGDIR = ./log
 SRCDIRS = . ./lib
 INCDIRS = ./inc
 
@@ -13,6 +14,7 @@ CFLAGS = -Wall -Wextra -g $(foreach D,$(INCDIRS),-I$(D)) $(DEPFLAGS)
 CFILES = $(foreach D,$(SRCDIRS),$(wildcard $(D)/*.c))
 OBJECTS = $(patsubst %.c,%.o,$(CFILES)) 
 DEPFILES = $(patsubst %.c,%.d,$(CFILES)) 
+LOGFILES = $(wildcard $(LOGDIR)/*)
 
 .PHONY : all clean
 
@@ -25,5 +27,5 @@ $(BINARY) : $(OBJECTS)
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 clean :
-	@rm -f $(BINARY) $(OBJECTS) $(DEPFILES)
+	@rm -f $(BINARY) $(OBJECTS) $(DEPFILES) $(LOGFILES)
 
