@@ -7,6 +7,9 @@
 #include "request.h"
 #include "config.h"
 
+// If T: must aquire 2 locks.
+// Else: Must aquire 1 lock.
+
 
 int commandInterpreter(hashmap *hm, cmd *command)
 {
@@ -31,21 +34,31 @@ int commandInterpreter(hashmap *hm, cmd *command)
         if ((a2 = find(hm, argv[3])) == NULL)
             return -1;                      // ERROR: Could not find account 2.
         funds = strtod(argv[4], NULL);
+        // START: LOCK 2
+        // START: LOCK 1
         transfer(a1, a2, funds);
-        a1->transaction_tracker += funds;
+        update_tracker(a1, funds);
+        // END: LOCK 2
+        // END: LOCK 1
     } else 
     if (strcmp(op, "W") == 0 && numarg == 3) {
         funds = strtod(argv[3], NULL);
+        // START: LOCK 1
         withdraw(a1, funds);
-        a1->transaction_tracker += funds;
+        update_tracker(a1, funds);
+        // END: LOCK 1
     } else
     if (strcmp(op, "D") == 0 && numarg == 3) {
         funds = strtod(argv[3], NULL);
+        // START: LOCK 1
         deposit(a1, funds);
-        a1->transaction_tracker += funds;
+        update_tracker(a1, funds);
+        // END: LOCK 2
     } else
     if (strcmp(op, "C") == 0 && numarg == 2) {
+        // START: LOCK 1
         check(a1);
+        // END: LOCK 1
     } else {
         return -1;                              // ERROR: Unrecognized request.
     }
@@ -80,7 +93,13 @@ void deposit(account *acc, double funds)
 }
 
 
-void update_balance(account **account_array, int numacs)
+void update_tracker(account *acc, double funds)
+{
+    acc->transaction_tracker += funds;
+}
+
+
+void process_reward(account **account_array, int numacs)
 {
     double reward;
     int i;

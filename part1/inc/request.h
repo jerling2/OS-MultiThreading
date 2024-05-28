@@ -12,10 +12,12 @@ void transfer(account *acc1, account *acc2, double funds);
 
 void deposit(account *acc, double funds);
 
+void update_tracker(account *acc, double funds);
+
 void withdraw(account *acc, double funds);
 
 void check(account *acc);
 
-void update_balance(account **account_array, int numacs);
+void process_reward(account **account_array, int numacs);
 
 #endif
