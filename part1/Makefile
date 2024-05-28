@@ -24,7 +24,7 @@ $(BINARY) : $(OBJECTS)
 	$(CC) -o $@ $^
 
 %.o : %.c
-	$(CC) $(CFLAGS) -c -o $@ $^
+	$(CC) -D SINGLE_THREAD $(CFLAGS) -c -o $@ $^
 
 clean :
 	@rm -f $(BINARY) $(OBJECTS) $(DEPFILES) $(LOGFILES)
