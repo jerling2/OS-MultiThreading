@@ -43,7 +43,6 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);   
     }
 
-
     for (i=0; i<10; i++) {
         thread_arg *arg = (thread_arg *)malloc(sizeof(thread_arg));
         arg->myid = i;

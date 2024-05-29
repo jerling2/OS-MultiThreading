@@ -26,6 +26,7 @@ int main (int argc, char *argv[])
 {
     FILE *stream;
     pthread_t worker_threads[10];
+    pthread_t banker_thread;
     int i;
 
     if (argc != 2) {                                         // Validate Input.
@@ -55,10 +56,9 @@ int main (int argc, char *argv[])
         pthread_join(worker_threads[i], NULL);
     }
 
-    // BANK THREAD STUFF
-    process_reward(account_array, numacs);
-    
-    /* THREAD JOIN CONDITION HERE */
+    // CREATE BANKER THREAD
+    pthread_create(&banker_thread, NULL, banker_thread, NULL);
+    pthread_join(banker_thread, NULL);
 
     // MAIN THREAD STUFF
     print_balances(account_array, numacs);
@@ -100,4 +100,11 @@ void *process_transaction (void *arg)
     }
     fclose(stream_copy);
     return NULL;
+}
+
+
+// BANK THREAD
+void *update_balance (void *arg)
+{
+    process_reward(account_array, numacs);
 }
