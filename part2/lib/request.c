@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <pthread.h>
 #include "list.h"
 #include "account.h"
 #include "parser.h"
 #include "request.h"
+#include "thread.h"
 
-#define MULTI_THREAD
 
 #ifdef SINGLE_THREAD
 int commandInterpreter(hashmap *hm, cmd *command)
@@ -76,37 +78,36 @@ int commandInterpreter(hashmap *hm, cmd *command)
         if ((a2 = find(hm, argv[3])) == NULL)
             return -1;                      // ERROR: Could not find account 2.
         funds = strtod(argv[4], NULL);
-        // START: LOCK 2
-        // START: LOCK 1
+        obtain_locks(2, a1, a2);                    // START: Critical Section.
         transfer(a1, a2, funds);
         update_tracker(a1, funds);
-        // END: LOCK 2
-        // END: LOCK 1
+        release_locks(2, a1, a2);                     // END: Critical Section.
     } else 
     if (strcmp(op, "W") == 0 && numarg == 3) {
         funds = strtod(argv[3], NULL);
-        // START: LOCK 1
+        obtain_locks(1, a1);                        // START: Critical Section.
         withdraw(a1, funds);
         update_tracker(a1, funds);
-        // END: LOCK 1
+        release_locks(1, a1);                         // END: Critical Section.
     } else
     if (strcmp(op, "D") == 0 && numarg == 3) {
         funds = strtod(argv[3], NULL);
-        // START: LOCK 1
+        obtain_locks(1, a1);                        // START: Critical Section.
         deposit(a1, funds);
         update_tracker(a1, funds);
-        // END: LOCK 2
+        release_locks(1, a1);                         // END: Critical Section.
     } else
     if (strcmp(op, "C") == 0 && numarg == 2) {
-        // START: LOCK 1
+        obtain_locks(1, a1);                        // START: Critical Section.
         check(a1);
-        // END: LOCK 1
+        release_locks(1, a1);                         // END: Critical Section.
     } else {
         return -1;                              // ERROR: Unrecognized request.
     }
     return 1;
 }
 #endif
+
 
 int verify_password(account *acc, char *pass)
 {
@@ -163,3 +164,4 @@ void check(account *acc)
     fflush(stream);
     fclose(stream);
 }
+

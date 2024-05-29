@@ -12,10 +12,11 @@ typedef struct account {
     double reward_rate;
     double transaction_tracker;
     pthread_mutex_t ac_lock;
+    int order;
 } account;
 
-account *initacc(char *id, char *pass, char *outfile, double balance,
-    double reward_rate);
+account *initacc(char *id, char *pass, char *outfile, double balance, 
+    double reward_rate, int order);
 
 void freeacc(account *acc);
 

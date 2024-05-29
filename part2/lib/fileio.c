@@ -65,7 +65,7 @@ void getAccounts(FILE *stream, char *filename,
             goto error;
         }
         snprintf(outfile, 64, LOGFILE, cindex);
-        ac = initacc(acnumber, password, outfile, balance, rewardrate);
+        ac = initacc(acnumber, password, outfile, balance, rewardrate, k);
         insert((*account_hashmap), acnumber, ac);
         (*acs)[cindex] = ac;
         (*numac)++;

@@ -7,7 +7,7 @@
 
 
 account *initacc(char *id, char *pass, char *outfile, double balance, 
-    double reward_rate)
+    double reward_rate, int order)
 {
     FILE *logfile;
     account *newacc;
@@ -19,6 +19,7 @@ account *initacc(char *id, char *pass, char *outfile, double balance,
     newacc->balance = balance;
     newacc->reward_rate = reward_rate;
     newacc->transaction_tracker = 0;
+    newacc->order = order;
     if (pthread_mutex_init(&(newacc->ac_lock), NULL) != 0) {
         free(newacc); // Free memory if mutex initialization fails
         return NULL;
