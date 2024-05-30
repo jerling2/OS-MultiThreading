@@ -23,6 +23,8 @@ hashmap *account_hashmap;
 account **account_array;
 int numacs;
 int bank_running;
+pthread_barrier_t worker_start_barrier;
+
 
 threadMediator worker_bank_sync = {
     .sync_lock = PTHREAD_MUTEX_INITIALIZER,
@@ -61,8 +63,16 @@ int main (int argc, char *argv[])
 
     // set bank to be running
     bank_running = 1;
+
+
     // CREATE BANKER THREAD
+    pthread_mutex_lock(&worker_bank_sync.sync_lock);
     pthread_create(&banker_thread, NULL, update_balance, NULL);
+    pthread_cond_wait(&worker_bank_sync.cond2, &worker_bank_sync.sync_lock);
+    pthread_mutex_unlock(&worker_bank_sync.sync_lock);
+
+    // INIT BARRIER
+    pthread_barrier_init(&worker_start_barrier, NULL, 11); // 11 = 10 workers + 1 main
 
     for (i=0; i<10; i++) {
         thread_arg *arg = (thread_arg *)malloc(sizeof(thread_arg));
@@ -70,6 +80,8 @@ int main (int argc, char *argv[])
         arg->total = 9;
         pthread_create(&worker_threads[i], NULL, process_transaction, (void *)arg);
     }
+
+    pthread_barrier_wait(&worker_start_barrier); //tell threads to start when ready
 
     for (i=0; i<10; i++) {
         pthread_join(worker_threads[i], NULL);
@@ -85,7 +97,6 @@ int main (int argc, char *argv[])
     print_balances(account_array, numacs);
     freeHashmap(account_hashmap, (void *)freeacc);
     free(account_array);
-    printf("rc->count=%d\n",rc->count);
     free(rc);
     fclose(stream);
 }
@@ -103,6 +114,7 @@ void *process_transaction (void *arg)
     char line[BUFSIZ];
     int offset = ((thread_arg *)arg)->myid;
     int total = ((thread_arg *)arg)->total;
+    
     free(arg);
     line_number = numacs*5+1;
     stream_copy = fopen(filename, "r");
@@ -113,6 +125,10 @@ void *process_transaction (void *arg)
     for (i = 0; i<offset; i++)
         fgets(line, BUFSIZ, stream_copy); // skip the next "offset" lines.
 
+
+    // Barrier
+    pthread_barrier_wait(&worker_start_barrier); // Need 11 threads waiting here 
+    
     while ((request = readRequest(stream_copy)) != NULL) {
         if (commandInterpreter(account_hashmap, request, rc) == -1)
             fprintf(stderr, REQUEST, WARNING, filename, line_number); // DEBUG.
@@ -129,11 +145,11 @@ void *process_transaction (void *arg)
 // BANK THREAD
 void *update_balance (void *arg)
 {
+    pthread_mutex_lock(&worker_bank_sync.sync_lock);
+    pthread_cond_signal(&worker_bank_sync.cond2); // Signal main
     while (bank_running) {
         pthread_cond_wait(&worker_bank_sync.cond1, &worker_bank_sync.sync_lock);
         pthread_cond_signal(&worker_bank_sync.cond2);
         process_reward(account_array, numacs);
-        printf("Updated reward\n");
-        fflush(stdout);
     }
 }

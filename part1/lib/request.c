@@ -151,19 +151,19 @@ void process_reward(account **account_array, int numacs)
         reward = account_array[i]->transaction_tracker;
         reward *= account_array[i]->reward_rate;
         account_array[i]->balance += reward;
-        account_array[i]->transaction_tracker = 0;
+        account_array[i]->transaction_tracker = 0; //< Helgrind error
     }
 }
 
 
 void check(account *acc)
 {
-    FILE *stream;
+    // FILE *stream;
 
-    stream = fopen(acc->out_file, "a");
-    fprintf(stream, "balance: %.2f\n", acc->balance);
-    fflush(stream);
-    fclose(stream);
+    // stream = fopen(acc->out_file, "a");
+    // fprintf(stream, "balance: %.2f\n", acc->balance);
+    // fflush(stream);
+    // fclose(stream);
 }
 
 
