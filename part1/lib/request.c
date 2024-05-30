@@ -11,7 +11,7 @@
 
 
 #ifdef SINGLE_THREAD
-int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc)
+int commandInterpreter(hashmap *hm, cmd *command)
 {
     char *op;
     char **argv;
@@ -45,7 +45,7 @@ int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc)
     if (strcmp(op, "D") == 0 && numarg == 3) {
         funds = strtod(argv[3], NULL);
         deposit(a1, funds);
-        updateexit_tracker(a1, funds);
+        update_tracker(a1, funds);
     } else
     if (strcmp(op, "C") == 0 && numarg == 2) {
         check(a1);
@@ -59,9 +59,8 @@ int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc)
 {
     char *op;
     char **argv;
-    int numarg;
-    account *a1;
-    account *a2;
+    account *a1, *a2;
+    int numarg, numacs;
     double funds;
 
     op = command->argv[0];
@@ -74,46 +73,38 @@ int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc)
     if (verify_password(a1, argv[2]) == -1) {
         return 1;
     }
-    if (strcmp(op, "T") == 0 && numarg == 4) {
-        if ((a2 = find(hm, argv[3])) == NULL)
-            return -1;                      // ERROR: Could not find account 2.
+    if (numarg==4) {
+        a2 = find(hm, argv[3]);
+        numacs = 2;
+    } else {
+        a2 = NULL;
+        numacs = 1;
+    }
+    obtain_locks(numacs, a1, a2);
+    pthread_mutex_lock(&rc->rc_lock);
+    if (strcmp(op, "T") == 0) {
         funds = strtod(argv[4], NULL);
-        obtain_locks(2, a1, a2);                    // START: Critical Section.
-        pthread_mutex_lock(&rc->rc_lock);
         transfer(a1, a2, funds);
         update_tracker(a1, funds);
         incrementCount(rc);
-        pthread_mutex_unlock(&rc->rc_lock);
-        release_locks(2, a1, a2);                     // END: Critical Section.
-    } else 
-    if (strcmp(op, "W") == 0 && numarg == 3) {
+    } else
+    if (strcmp(op, "W") == 0) {
         funds = strtod(argv[3], NULL);
-        obtain_locks(1, a1);                        // START: Critical Section.
-        pthread_mutex_lock(&rc->rc_lock);
         withdraw(a1, funds);
         update_tracker(a1, funds);
         incrementCount(rc);
-        pthread_mutex_unlock(&rc->rc_lock);
-        release_locks(1, a1);                         // END: Critical Section.
-
     } else
-    if (strcmp(op, "D") == 0 && numarg == 3) {
+    if (strcmp(op, "D") == 0) {
         funds = strtod(argv[3], NULL);
-        obtain_locks(1, a1);                        // START: Critical Section.
-        pthread_mutex_lock(&rc->rc_lock);
         deposit(a1, funds);
         update_tracker(a1, funds);
         incrementCount(rc);
-        pthread_mutex_unlock(&rc->rc_lock);
-        release_locks(1, a1);                         // END: Critical Section.
     } else
-    if (strcmp(op, "C") == 0 && numarg == 2) {
-        obtain_locks(1, a1);                        // START: Critical Section.
+    if (strcmp(op, "C") == 0) {
         check(a1);
-        release_locks(1, a1);                         // END: Critical Section.
-    } else {
-        return -1;                              // ERROR: Unrecognized request.
-    }
+    } 
+    pthread_mutex_unlock(&rc->rc_lock);
+    release_locks(numacs, a1, a2);
     return 1;
 }
 #endif
@@ -160,6 +151,7 @@ void process_reward(account **account_array, int numacs)
         reward = account_array[i]->transaction_tracker;
         reward *= account_array[i]->reward_rate;
         account_array[i]->balance += reward;
+        account_array[i]->transaction_tracker = 0;
     }
 }
 
@@ -174,13 +166,15 @@ void check(account *acc)
     fclose(stream);
 }
 
-// IDEA: incrementCount should signal when it reaches 5000. 
+
 void incrementCount(requestCounter *rc)
 {
+    pthread_mutex_lock(&worker_bank_sync.sync_lock);
     rc->count ++;
     if (rc->count == 5000) {
-        printf("Reached 5000!\n");
+        pthread_cond_signal(&worker_bank_sync.cond1);
+        pthread_cond_wait(&worker_bank_sync.cond2, &worker_bank_sync.sync_lock);
         rc->count = 0;
     }
+    pthread_mutex_unlock(&worker_bank_sync.sync_lock);
 }
-

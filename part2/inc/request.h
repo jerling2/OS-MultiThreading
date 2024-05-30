@@ -8,10 +8,21 @@
 typedef struct requestCounter {
     int count;
     pthread_mutex_t rc_lock;
-    
 } requestCounter;
 
+typedef struct threadMediator {
+    pthread_mutex_t sync_lock;
+    pthread_cond_t cond1;
+    pthread_cond_t cond2;
+} threadMediator;
+
+extern threadMediator worker_bank_sync;
+
+#ifdef SINGLE_THREAD
+int commandInterpreter(hashmap *hm, cmd *command);
+#elif defined(MULTI_THREAD)
 int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc);
+#endif
 
 int verify_password(account *acc, char *pass);
 

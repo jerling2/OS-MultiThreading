@@ -22,6 +22,13 @@ char *filename;
 hashmap *account_hashmap;
 account **account_array;
 int numacs;
+int bank_running;
+
+threadMediator worker_bank_sync = {
+    .sync_lock = PTHREAD_MUTEX_INITIALIZER,
+    .cond1 = PTHREAD_COND_INITIALIZER,
+    .cond2 = PTHREAD_COND_INITIALIZER
+};
 
 int main (int argc, char *argv[]) 
 {
@@ -43,7 +50,7 @@ int main (int argc, char *argv[])
     // Spagetti code
     rc = (requestCounter *)malloc(sizeof(requestCounter));
     rc->count = 0;
-    pthread_mutex_init(&(rc->rc_lock), NULL);
+    pthread_mutex_init(&rc->rc_lock, NULL);
     // end
 
     getAccounts(stream, filename, &account_hashmap, &account_array, &numacs);
@@ -51,6 +58,11 @@ int main (int argc, char *argv[])
         fclose(stream);
         exit(EXIT_FAILURE);   
     }
+
+    // set bank to be running
+    bank_running = 1;
+    // CREATE BANKER THREAD
+    pthread_create(&banker_thread, NULL, update_balance, NULL);
 
     for (i=0; i<10; i++) {
         thread_arg *arg = (thread_arg *)malloc(sizeof(thread_arg));
@@ -62,9 +74,11 @@ int main (int argc, char *argv[])
     for (i=0; i<10; i++) {
         pthread_join(worker_threads[i], NULL);
     }
+    
+    // Tell bank to update one last time.
+    bank_running = 0;
+    pthread_cond_signal(&worker_bank_sync.cond1);
 
-    // CREATE BANKER THREAD
-    pthread_create(&banker_thread, NULL, update_balance, NULL);
     pthread_join(banker_thread, NULL);
 
     // MAIN THREAD STUFF
@@ -115,5 +129,11 @@ void *process_transaction (void *arg)
 // BANK THREAD
 void *update_balance (void *arg)
 {
-    process_reward(account_array, numacs);
+    while (bank_running) {
+        pthread_cond_wait(&worker_bank_sync.cond1, &worker_bank_sync.sync_lock);
+        pthread_cond_signal(&worker_bank_sync.cond2);
+        process_reward(account_array, numacs);
+        printf("Updated reward\n");
+        fflush(stdout);
+    }
 }
