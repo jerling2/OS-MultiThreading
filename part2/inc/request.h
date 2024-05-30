@@ -38,6 +38,8 @@ void check(account *acc);
 
 void process_reward(account **account_array, int numacs);
 
+void appendToFile(account *acc);
+
 void incrementCount(requestCounter *rc);
 
 #endif
