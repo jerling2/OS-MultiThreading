@@ -17,6 +17,7 @@
 
 void *process_transaction (void *arg);
 void *update_balance (void *arg);
+requestCounter *rc;
 char *filename;
 hashmap *account_hashmap;
 account **account_array;
@@ -26,6 +27,7 @@ int main (int argc, char *argv[])
 {
     FILE *stream;
     pthread_t worker_threads[10];
+    pthread_t banker_thread;
     int i;
 
     if (argc != 2) {                                         // Validate Input.
@@ -37,6 +39,13 @@ int main (int argc, char *argv[])
         printf(STREAM, ERROR, filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
+
+    // Spagetti code
+    rc = (requestCounter *)malloc(sizeof(requestCounter));
+    rc->count = 0;
+    pthread_mutex_init(&(rc->rc_lock), NULL);
+    // end
+
     getAccounts(stream, filename, &account_hashmap, &account_array, &numacs);
     if (numacs == 0) {                              // Handle getAccount Error.
         fclose(stream);
@@ -54,15 +63,16 @@ int main (int argc, char *argv[])
         pthread_join(worker_threads[i], NULL);
     }
 
-    // BANK THREAD STUFF
-    process_reward(account_array, numacs);
-    
-    /* THREAD JOIN CONDITION HERE */
+    // CREATE BANKER THREAD
+    pthread_create(&banker_thread, NULL, update_balance, NULL);
+    pthread_join(banker_thread, NULL);
 
     // MAIN THREAD STUFF
     print_balances(account_array, numacs);
     freeHashmap(account_hashmap, (void *)freeacc);
     free(account_array);
+    printf("rc->count=%d\n",rc->count);
+    free(rc);
     fclose(stream);
 }
 
@@ -90,7 +100,7 @@ void *process_transaction (void *arg)
         fgets(line, BUFSIZ, stream_copy); // skip the next "offset" lines.
 
     while ((request = readRequest(stream_copy)) != NULL) {
-        if (commandInterpreter(account_hashmap, request) == -1)
+        if (commandInterpreter(account_hashmap, request, rc) == -1)
             fprintf(stderr, REQUEST, WARNING, filename, line_number); // DEBUG.
         freecmd(request);
         for (i = 0; i<total; i++)
@@ -99,4 +109,11 @@ void *process_transaction (void *arg)
     }
     fclose(stream_copy);
     return NULL;
+}
+
+
+// BANK THREAD
+void *update_balance (void *arg)
+{
+    process_reward(account_array, numacs);
 }

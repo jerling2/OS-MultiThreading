@@ -11,7 +11,7 @@
 
 
 #ifdef SINGLE_THREAD
-int commandInterpreter(hashmap *hm, cmd *command)
+int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc)
 {
     char *op;
     char **argv;
@@ -45,7 +45,7 @@ int commandInterpreter(hashmap *hm, cmd *command)
     if (strcmp(op, "D") == 0 && numarg == 3) {
         funds = strtod(argv[3], NULL);
         deposit(a1, funds);
-        update_tracker(a1, funds);
+        updateexit_tracker(a1, funds);
     } else
     if (strcmp(op, "C") == 0 && numarg == 2) {
         check(a1);
@@ -55,7 +55,7 @@ int commandInterpreter(hashmap *hm, cmd *command)
     return 1;
 }
 #elif defined(MULTI_THREAD)
-int commandInterpreter(hashmap *hm, cmd *command)
+int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc)
 {
     char *op;
     char **argv;
@@ -79,22 +79,32 @@ int commandInterpreter(hashmap *hm, cmd *command)
             return -1;                      // ERROR: Could not find account 2.
         funds = strtod(argv[4], NULL);
         obtain_locks(2, a1, a2);                    // START: Critical Section.
+        pthread_mutex_lock(&rc->rc_lock);
         transfer(a1, a2, funds);
         update_tracker(a1, funds);
+        incrementCount(rc);
+        pthread_mutex_unlock(&rc->rc_lock);
         release_locks(2, a1, a2);                     // END: Critical Section.
     } else 
     if (strcmp(op, "W") == 0 && numarg == 3) {
         funds = strtod(argv[3], NULL);
         obtain_locks(1, a1);                        // START: Critical Section.
+        pthread_mutex_lock(&rc->rc_lock);
         withdraw(a1, funds);
         update_tracker(a1, funds);
+        incrementCount(rc);
+        pthread_mutex_unlock(&rc->rc_lock);
         release_locks(1, a1);                         // END: Critical Section.
+
     } else
     if (strcmp(op, "D") == 0 && numarg == 3) {
         funds = strtod(argv[3], NULL);
         obtain_locks(1, a1);                        // START: Critical Section.
+        pthread_mutex_lock(&rc->rc_lock);
         deposit(a1, funds);
         update_tracker(a1, funds);
+        incrementCount(rc);
+        pthread_mutex_unlock(&rc->rc_lock);
         release_locks(1, a1);                         // END: Critical Section.
     } else
     if (strcmp(op, "C") == 0 && numarg == 2) {
@@ -107,7 +117,6 @@ int commandInterpreter(hashmap *hm, cmd *command)
     return 1;
 }
 #endif
-
 
 int verify_password(account *acc, char *pass)
 {
@@ -163,5 +172,15 @@ void check(account *acc)
     fprintf(stream, "balance: %.2f\n", acc->balance);
     fflush(stream);
     fclose(stream);
+}
+
+// IDEA: incrementCount should signal when it reaches 5000. 
+void incrementCount(requestCounter *rc)
+{
+    rc->count ++;
+    if (rc->count == 5000) {
+        printf("Reached 5000!\n");
+        rc->count = 0;
+    }
 }
 

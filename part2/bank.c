@@ -17,6 +17,7 @@
 
 void *process_transaction (void *arg);
 void *update_balance (void *arg);
+requestCounter *rc;
 char *filename;
 hashmap *account_hashmap;
 account **account_array;
@@ -39,11 +40,17 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     getAccounts(stream, filename, &account_hashmap, &account_array, &numacs);
+
+    // Spagetti code
+    rc = (requestCounter *)malloc(sizeof(requestCounter));
+    rc->count = 0;
+    pthread_mutex_init(&(rc->rc_lock), NULL);
+    // end
+
     if (numacs == 0) {                              // Handle getAccount Error.
         fclose(stream);
         exit(EXIT_FAILURE);   
     }
-
 
     for (i=0; i<10; i++) {
         thread_arg *arg = (thread_arg *)malloc(sizeof(thread_arg));
@@ -57,13 +64,14 @@ int main (int argc, char *argv[])
     }
 
     // CREATE BANKER THREAD
-    pthread_create(&banker_thread, NULL, banker_thread, NULL);
+    pthread_create(&banker_thread, NULL, update_balance, NULL);
     pthread_join(banker_thread, NULL);
 
     // MAIN THREAD STUFF
     print_balances(account_array, numacs);
     freeHashmap(account_hashmap, (void *)freeacc);
     free(account_array);
+    free(rc);
     fclose(stream);
 }
 
@@ -91,7 +99,7 @@ void *process_transaction (void *arg)
         fgets(line, BUFSIZ, stream_copy); // skip the next "offset" lines.
 
     while ((request = readRequest(stream_copy)) != NULL) {
-        if (commandInterpreter(account_hashmap, request) == -1)
+        if (commandInterpreter(account_hashmap, request, rc) == -1)
             fprintf(stderr, REQUEST, WARNING, filename, line_number); // DEBUG.
         freecmd(request);
         for (i = 0; i<total; i++)
