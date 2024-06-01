@@ -23,10 +23,18 @@ hashmap *account_hashmap;
 account **account_array;
 int numacs;
 int bank_running;
+int COUNTER;
 pthread_barrier_t worker_start_barrier;
 
 
 threadMediator worker_bank_sync = {
+    .sync_lock = PTHREAD_MUTEX_INITIALIZER,
+    .cond1 = PTHREAD_COND_INITIALIZER,
+    .cond2 = PTHREAD_COND_INITIALIZER
+};
+
+
+threadMediator worker_sync = {
     .sync_lock = PTHREAD_MUTEX_INITIALIZER,
     .cond1 = PTHREAD_COND_INITIALIZER,
     .cond2 = PTHREAD_COND_INITIALIZER
@@ -73,6 +81,8 @@ int main (int argc, char *argv[])
     pthread_barrier_init(&worker_start_barrier, NULL, 11); 
 
     // Create worker threads.
+    COUNTER = 0;
+    pthread_mutex_lock(&worker_sync.sync_lock);
     for (i=0; i<10; i++) {
         thread_arg *arg = (thread_arg *)malloc(sizeof(thread_arg));
         arg->myid = i;
@@ -81,7 +91,10 @@ int main (int argc, char *argv[])
     }
 
     // Wait until all worker threads are ready.
-    pthread_barrier_wait(&worker_start_barrier);
+    pthread_barrier_wait(&worker_start_barrier);    // Wait until all threads are made.
+    pthread_cond_wait(&worker_sync.cond2, &worker_sync.sync_lock);  // Wait until all threads are on the ba
+    pthread_cond_broadcast(&worker_sync.cond1); //
+    pthread_mutex_unlock(&worker_sync.sync_lock);
 
     // Wait for workers to exit.
     for (i=0; i<10; i++) {
@@ -121,10 +134,18 @@ void *process_transaction (void *arg)
     for (i = 0; i<offset; i++)
         fgets(line, BUFSIZ, stream_copy); // skip the next "offset" lines.
 
-
     // Barrier
     pthread_barrier_wait(&worker_start_barrier); // Need 11 threads waiting here 
-    
+    pthread_mutex_lock(&worker_sync.sync_lock);
+    if (COUNTER != total) {
+        COUNTER ++;
+        pthread_cond_wait(&worker_sync.cond1, &worker_sync.sync_lock);
+    } else {
+        pthread_cond_signal(&worker_sync.cond2);
+        pthread_cond_wait(&worker_sync.cond1, &worker_sync.sync_lock);
+    }
+    pthread_mutex_unlock(&worker_sync.sync_lock);
+
     while ((request = readRequest(stream_copy)) != NULL) {
         if (commandInterpreter(account_hashmap, request, &rc) == -1)
             fprintf(stderr, REQUEST, WARNING, filename, line_number); // DEBUG.
@@ -150,7 +171,7 @@ void *update_balance (void *arg)
     }
 }
 
-// MAIN: A- *w || (C1, A+-)
-// WORK:       || A- (if not last: (C2, A+-), else: C1, (C2, A+-))
+// MAIN: A- *w (C1, A+-)
+// WORK:        A- (if not last: (C2, A+-), else: C1, (C2, A+-))
 // Barrier lets main know when all threads are created
 // Barrier lets all threads start at some time
