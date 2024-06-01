@@ -177,7 +177,7 @@ void check(account *acc)
     // fclose(stream);
 }
 
-
+#ifdef MULTI_THREAD
 void incrementCount(requestCounter *rc)
 {
     pthread_mutex_lock(&worker_bank_sync.sync_lock);
@@ -189,3 +189,4 @@ void incrementCount(requestCounter *rc)
     }
     pthread_mutex_unlock(&worker_bank_sync.sync_lock);
 }
+#endif

@@ -15,9 +15,9 @@
 #define STREAM "%s could not open '%s'. %s.\n"
 #define REQUEST "%s invalid request %s:%d.\n"
 
+
 void *process_transaction (void *arg);
 void *update_balance (void *arg);
-requestCounter *rc;
 char *filename;
 hashmap *account_hashmap;
 account **account_array;
@@ -31,6 +31,13 @@ threadMediator worker_bank_sync = {
     .cond1 = PTHREAD_COND_INITIALIZER,
     .cond2 = PTHREAD_COND_INITIALIZER
 };
+
+
+requestCounter rc = {
+    .rc_lock = PTHREAD_MUTEX_INITIALIZER,
+    .count = 0,
+};
+
 
 int main (int argc, char *argv[]) 
 {
@@ -49,31 +56,23 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Spagetti code
-    rc = (requestCounter *)malloc(sizeof(requestCounter));
-    rc->count = 0;
-    pthread_mutex_init(&rc->rc_lock, NULL);
-    // end
-
     getAccounts(stream, filename, &account_hashmap, &account_array, &numacs);
     if (numacs == 0) {                              // Handle getAccount Error.
         fclose(stream);
         exit(EXIT_FAILURE);   
     }
 
-    // set bank to be running
+    // Create bank thread.
     bank_running = 1;
-
-
-    // CREATE BANKER THREAD
     pthread_mutex_lock(&worker_bank_sync.sync_lock);
     pthread_create(&banker_thread, NULL, update_balance, NULL);
     pthread_cond_wait(&worker_bank_sync.cond2, &worker_bank_sync.sync_lock);
     pthread_mutex_unlock(&worker_bank_sync.sync_lock);
 
-    // INIT BARRIER
-    pthread_barrier_init(&worker_start_barrier, NULL, 11); // 11 = 10 workers + 1 main
+    // Create Barrier for 11 threads (10 workers + 1 main)
+    pthread_barrier_init(&worker_start_barrier, NULL, 11); 
 
+    // Create worker threads.
     for (i=0; i<10; i++) {
         thread_arg *arg = (thread_arg *)malloc(sizeof(thread_arg));
         arg->myid = i;
@@ -81,28 +80,25 @@ int main (int argc, char *argv[])
         pthread_create(&worker_threads[i], NULL, process_transaction, (void *)arg);
     }
 
-    pthread_barrier_wait(&worker_start_barrier); //tell threads to start when ready
+    // Wait until all worker threads are ready.
+    pthread_barrier_wait(&worker_start_barrier);
 
+    // Wait for workers to exit.
     for (i=0; i<10; i++) {
         pthread_join(worker_threads[i], NULL);
     }
     
-    // Tell bank to update one last time.
+    // Terminate the bank thread.
     bank_running = 0;
     pthread_cond_signal(&worker_bank_sync.cond1);
-
     pthread_join(banker_thread, NULL);
 
-    // MAIN THREAD STUFF
     print_balances(account_array, numacs);
     freeHashmap(account_hashmap, (void *)freeacc);
     free(account_array);
-    free(rc);
     fclose(stream);
 }
 
-// GLOBAL : hashmap (read only), numacs (read only), filename (read only)
-// STACK : Line number , request, stream*
 
 // WORKER THREAD
 void *process_transaction (void *arg)
@@ -130,7 +126,7 @@ void *process_transaction (void *arg)
     pthread_barrier_wait(&worker_start_barrier); // Need 11 threads waiting here 
     
     while ((request = readRequest(stream_copy)) != NULL) {
-        if (commandInterpreter(account_hashmap, request, rc) == -1)
+        if (commandInterpreter(account_hashmap, request, &rc) == -1)
             fprintf(stderr, REQUEST, WARNING, filename, line_number); // DEBUG.
         freecmd(request);
         for (i = 0; i<total; i++)
@@ -153,3 +149,8 @@ void *update_balance (void *arg)
         process_reward(account_array, numacs);
     }
 }
+
+// MAIN: A- *w || (C1, A+-)
+// WORK:       || A- (if not last: (C2, A+-), else: C1, (C2, A+-))
+// Barrier lets main know when all threads are created
+// Barrier lets all threads start at some time

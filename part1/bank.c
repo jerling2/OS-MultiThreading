@@ -45,7 +45,7 @@ int main (int argc, char *argv[])
         freecmd(request);
         line_number ++;
     }
-    process_reward(account_array, numacs);
+    // process_reward(account_array, numacs);
     print_balances(account_array, numacs);
     freeHashmap(account_hashmap, (void *)freeacc);
     free(account_array);
