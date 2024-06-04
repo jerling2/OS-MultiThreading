@@ -8,10 +8,8 @@
 #include "parser.h"
 #include "request.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
-#define WARNING "\x1b[1;31mWARNING\x1b[0m"
 #define USUAGE "%s usuage %s <filename>\n"
 #define STREAM "%s could not open '%s'. %s.\n"
-#define REQUEST "%s invalid request %s:%d.\n"
 
 
 int main (int argc, char *argv[]) 
@@ -22,31 +20,29 @@ int main (int argc, char *argv[])
     account **account_array;
     int numacs;
     cmd *request;
-    int line_number;
 
-    if (argc != 2) {                                         // Validate Input.
+    /* Validate input. */
+    if (argc != 2) {
         fprintf(stderr, USUAGE, ERROR, argv[0]);
         exit(EXIT_FAILURE); 
     }
     filename = argv[1];
-    if ((stream = fopen(filename, "r")) == NULL) {              // Open stream.
+    if ((stream = fopen(filename, "r")) == NULL) {
         printf(STREAM, ERROR, filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
+    /* Extract account data and Create datastructures */
     getAccounts(stream, filename, &account_hashmap, &account_array, &numacs);
-    if (numacs == 0) {                              // Handle getAccount Error.
-        fclose(stream);
-        exit(EXIT_FAILURE);   
-    }
-    line_number = numacs * 5 + 2;                     // Line number for DEBUG.
+    /* Process requests from the input file */
     while ((request = readRequest(stream)) != NULL) {
-        if (commandInterpreter(account_hashmap, request) == -1)
-            fprintf(stderr, REQUEST, WARNING, filename, line_number); // DEBUG.
+        CommandInterpreter(account_hashmap, request);
         freecmd(request);
-        line_number ++;
     }
-    // process_reward(account_array, numacs);
+    /* Apply the reward rate to all balances */
+    ProcessReward(account_array, numacs);
+    /* Output data to standard out */
     print_balances(account_array, numacs);
+    /* Free resources */
     freeHashmap(account_hashmap, (void *)freeacc);
     free(account_array);
     fclose(stream);

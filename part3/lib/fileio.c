@@ -94,12 +94,8 @@ cmd *readRequest (FILE *stream)
     if (errno != 0) {              
         fprintf(stderr, "%s readcmd(): %s\n", ERROR, strerror(errno));
     }
-
-    // Maybe convert to right type here?
-    // W/O verifying password.
-
     return command;
-}   /* readfile */
+}
 
 
 int extractitem(FILE *stream, char *pattern, void *data)

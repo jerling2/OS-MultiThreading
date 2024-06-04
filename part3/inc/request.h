@@ -1,45 +1,50 @@
 #ifndef REQUEST_H
 #define REQUEST_H
+
+
 #include <pthread.h>
 #include "list.h"
 #include "account.h"
 #include "parser.h"
 
-typedef struct requestCounter {
+
+typedef struct mutexCounter {
     int count;
-    pthread_mutex_t rc_lock;
-} requestCounter;
+    pthread_mutex_t lock;
+} mutexCounter;
+
 
 typedef struct threadMediator {
-    pthread_mutex_t sync_lock;
-    pthread_cond_t cond1;
-    pthread_cond_t cond2;
+    pthread_mutex_t lock;
+    pthread_cond_t sig1;
+    pthread_cond_t sig2;
 } threadMediator;
 
-extern threadMediator worker_bank_sync;
+#if defined(PART3)
 
-#ifdef SINGLE_THREAD
-int commandInterpreter(hashmap *hm, cmd *command);
-#elif defined(MULTI_THREAD)
-int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc);
+    extern threadMediator bankSync;
+    extern mutexCounter requestCounter;
+
+    void IncrementCount();
+
 #endif
 
-int verify_password(account *acc, char *pass);
+void CommandInterpreter(hashmap *hm, cmd *command); 
 
-void transfer(account *acc1, account *acc2, double funds);
+void ObtainAccountLocks(account *a1, account *a2);
 
-void deposit(account *acc, double funds);
+void ReleaseAccountLocks(account *a1, account *a2);
 
-void update_tracker(account *acc, double funds);
+void Transfer(account *acc1, account *acc2, double funds);
 
-void withdraw(account *acc, double funds);
+void Deposit(account *acc, double funds);
 
-void check(account *acc);
+void UpdateTracker(account *acc, double funds);
 
-void process_reward(account **account_array, int numacs);
+void Withdraw(account *acc, double funds);
 
-void appendToFile(account *acc);
+void ProcessReward(account **account_array, int numacs);
 
-void incrementCount(requestCounter *rc);
+void AppendToFile(account *acc);
 
 #endif

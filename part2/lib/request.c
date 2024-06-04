@@ -7,156 +7,150 @@
 #include "account.h"
 #include "parser.h"
 #include "request.h"
-#include "thread.h"
 
 
-#ifdef SINGLE_THREAD
-int commandInterpreter(hashmap *hm, cmd *command)
-{
-    char *op;
-    char **argv;
-    int numarg;
-    account *a1;
-    account *a2;
-    double funds;
-
-    op = command->argv[0];
-    argv = command->argv;
-    numarg = command->size - 2;
-    if (op == NULL || numarg < 2)
-        return -1;                          // ERROR: Incorrect request syntax.
-    if ((a1 = find(hm, argv[1])) == NULL)
-        return -1;                          // ERROR: Could not find account 1.
-    if (verify_password(a1, argv[2]) == -1) {
-        return 1;
-    }
-    if (strcmp(op, "T") == 0 && numarg == 4) {
-        if ((a2 = find(hm, argv[3])) == NULL)
-            return -1;                      // ERROR: Could not find account 2.
-        funds = strtod(argv[4], NULL);
-        transfer(a1, a2, funds);
-        update_tracker(a1, funds);
-    } else 
-    if (strcmp(op, "W") == 0 && numarg == 3) {
-        funds = strtod(argv[3], NULL);
-        withdraw(a1, funds);
-        update_tracker(a1, funds);
-    } else
-    if (strcmp(op, "D") == 0 && numarg == 3) {
-        funds = strtod(argv[3], NULL);
-        deposit(a1, funds);
-        update_tracker(a1, funds);
-    } else
-    if (strcmp(op, "C") == 0 && numarg == 2) {
-        check(a1);
-    } else {
-        return -1;                              // ERROR: Unrecognized request.
-    }
-    return 1;
-}
-#elif defined(MULTI_THREAD)
-int commandInterpreter(hashmap *hm, cmd *command, requestCounter *rc)
+void CommandInterpreter(hashmap *hm, cmd *command)
 {
     char *op;
     char **argv;
     account *a1, *a2;
-    int numarg, numacs;
+    int numarg;
     double funds;
 
     op = command->argv[0];
     argv = command->argv;
     numarg = command->size - 2;
-    if (op == NULL || numarg < 2)
-        return -1;                          // ERROR: Incorrect request syntax.
-    if ((a1 = find(hm, argv[1])) == NULL)
-        return -1;                          // ERROR: Could not find account 1.
-    if (verify_password(a1, argv[2]) == -1) {
-        return 1;
+    a1 = find(hm, argv[1]);
+    if (strcmp(a1->password, argv[2]) != 0) { // Check password
+        return;
     }
     if (numarg==4) {
         a2 = find(hm, argv[3]);
-        numacs = 2;
-    } else {
-        a2 = NULL;
-        numacs = 1;
-    }
-    obtain_locks(numacs, a1, a2);
-    pthread_mutex_lock(&rc->rc_lock);
-    if (strcmp(op, "T") == 0) {
         funds = strtod(argv[4], NULL);
-        transfer(a1, a2, funds);
-        update_tracker(a1, funds);
-        incrementCount(rc);
     } else
-    if (strcmp(op, "W") == 0) {
+    if (numarg==3) {
+        a2 = NULL;
         funds = strtod(argv[3], NULL);
-        withdraw(a1, funds);
-        update_tracker(a1, funds);
-        incrementCount(rc);
+    } else {
+        return; // Check request does nothing.
+    }
+    #if defined(PART2) || defined(PART3)
+    ObtainAccountLocks(a1, a2);
+    #endif
+    #ifdef PART3
+    pthread_mutex_lock(&requestCounter.lock);
+    #endif
+    if (strcmp(op, "T") == 0) {
+        Transfer(a1, a2, funds);
+        UpdateTracker(a1, funds);
+    } else 
+    if (strcmp(op, "W") == 0) {
+        Withdraw(a1, funds);
+        UpdateTracker(a1, funds);
     } else
     if (strcmp(op, "D") == 0) {
-        funds = strtod(argv[3], NULL);
-        deposit(a1, funds);
-        update_tracker(a1, funds);
-        incrementCount(rc);
-    } else
-    if (strcmp(op, "C") == 0) {
-        check(a1);
-    } 
-    pthread_mutex_unlock(&rc->rc_lock);
-    release_locks(numacs, a1, a2);
-    return 1;
+        Deposit(a1, funds);
+        UpdateTracker(a1, funds);
+    }
+    #ifdef PART3
+    IncrementCount();
+    pthread_mutex_unlock(&requestCounter.lock);
+    #endif
+    #if defined(PART2) || defined(PART3)
+    ReleaseAccountLocks(a1, a2);
+    #endif 
+}
+
+#ifdef PART3
+void IncrementCount()
+{
+    pthread_mutex_lock(&bankSync.lock);
+    requestCounter.count ++;
+    if (requestCounter.count == 5000) {
+        pthread_cond_signal(&bankSync.sig1);
+        pthread_cond_wait(&bankSync.sig2, &bankSync.lock);
+        requestCounter.count = 0;
+    }
+    pthread_mutex_unlock(&bankSync.lock);
 }
 #endif
 
-int verify_password(account *acc, char *pass)
+
+void ObtainAccountLocks(account *a1, account *a2)
 {
-    if (strcmp(acc->password, pass) != 0)
-        return -1;
-    return 0;
+    if (a2 == NULL) {
+        pthread_mutex_lock(&a1->ac_lock);
+        return;
+    }
+    if (a1->order < a2->order) {
+        pthread_mutex_lock(&a1->ac_lock);
+        pthread_mutex_lock(&a2->ac_lock);
+    } else {
+        pthread_mutex_lock(&a2->ac_lock);
+        pthread_mutex_lock(&a1->ac_lock);
+    }
+    return;      
 }
 
 
-void transfer(account *acc1, account *acc2, double funds)
+void ReleaseAccountLocks(account *a1, account *a2)
 {
-    withdraw(acc1, funds);
-    deposit(acc2, funds);
+    if (a2 == NULL) {
+        pthread_mutex_unlock(&a1->ac_lock);
+        return;
+    }
+    if (a1->order > a2->order) {
+        pthread_mutex_unlock(&a1->ac_lock);
+        pthread_mutex_unlock(&a2->ac_lock);
+    } else {
+        pthread_mutex_unlock(&a2->ac_lock);
+        pthread_mutex_unlock(&a1->ac_lock);
+    }
+    return;      
 }
 
 
-void withdraw(account *acc, double funds)
+void Transfer(account *acc1, account *acc2, double funds)
+{
+    Withdraw(acc1, funds);
+    Deposit(acc2, funds);
+}
+
+
+void Withdraw(account *acc, double funds)
 {
     acc->balance -= funds;
 }
 
 
-void deposit(account *acc, double funds)
+void Deposit(account *acc, double funds)
 {
     acc->balance += funds;
 }
 
 
-void update_tracker(account *acc, double funds)
+void UpdateTracker(account *acc, double funds)
 {
     acc->transaction_tracker += funds;
 }
 
 
-void process_reward(account **account_array, int numacs)
+void ProcessReward(account **accountArray, int totalAccounts)
 {
     double reward;
     int i;
 
-    for (i = 0; i<numacs; i++) {
-        reward = account_array[i]->transaction_tracker;
-        reward *= account_array[i]->reward_rate;
-        account_array[i]->balance += reward;
-        account_array[i]->transaction_tracker = 0; //< Helgrind error
-        appendToFile(account_array[i]);
+    for (i = 0; i<totalAccounts; i++) {
+        reward = accountArray[i]->transaction_tracker;
+        reward *= accountArray[i]->reward_rate;
+        accountArray[i]->balance += reward;
+        accountArray[i]->transaction_tracker = 0;           //< Helgrind error.
+        AppendToFile(accountArray[i]);
     }
 }
 
-void appendToFile(account *acc)
+
+void AppendToFile(account *acc)
 {
     FILE *stream;
 
@@ -165,28 +159,3 @@ void appendToFile(account *acc)
     fflush(stream);
     fclose(stream);
 }
-
-
-void check(account *acc)
-{
-    // FILE *stream;
-
-    // stream = fopen(acc->out_file, "a");
-    // fprintf(stream, "balance: %.2f\n", acc->balance);
-    // fflush(stream);
-    // fclose(stream);
-}
-
-#ifdef MULTI_THREAD
-void incrementCount(requestCounter *rc)
-{
-    pthread_mutex_lock(&worker_bank_sync.sync_lock);
-    rc->count ++;
-    if (rc->count == 5000) {
-        pthread_cond_signal(&worker_bank_sync.cond1);
-        pthread_cond_wait(&worker_bank_sync.cond2, &worker_bank_sync.sync_lock);
-        rc->count = 0;
-    }
-    pthread_mutex_unlock(&worker_bank_sync.sync_lock);
-}
-#endif
