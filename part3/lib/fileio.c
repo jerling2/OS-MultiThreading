@@ -1,3 +1,9 @@
+/*
+Joseph Erlinger (jerling2@uoregon.edu)
+
+This file "file.c" is responsible for reading account and request data from an
+input file.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

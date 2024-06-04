@@ -1,3 +1,9 @@
+/*
+Joseph Erlinger (jerling2@uoregon.edu)
+
+This file "request.c" is for processing request 'cmd' structs. Some functions
+change in functionality depending on the part#.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

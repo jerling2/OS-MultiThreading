@@ -1,5 +1,8 @@
 /*
 Joseph Erlinger (jerling2@uoregon.edu)
+
+This file "parser.c" is responsible for tokenizing a string and storing the
+data in a 'cmd' struct.
 */
 #include <string.h>
 #include <stdlib.h>

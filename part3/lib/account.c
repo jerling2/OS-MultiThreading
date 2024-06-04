@@ -1,3 +1,9 @@
+/*
+Joseph Erlinger (jerling2@uoregon.edu)
+
+This file "account.c" is responsible for initializing accounts and managing an
+array of accounts.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +53,7 @@ void FreeAccountArray(account **accountArray, int arraySize)
     }
     free(accountArray);
 }
+
 
 account *Find(account **accountArray, char *accountID, int arraySize)
 {
