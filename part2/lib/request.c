@@ -10,24 +10,24 @@
 
 void CommandInterpreter(account **accountArray, cmd *command,  int totalAccounts)
 {
-    char *op;
+    char *operator;
     char **argv;
     account *a1, *a2;
-    int numarg;
+    int totalOperands;
     double funds;
 
-    op = command->argv[0];
+    operator = command->argv[0];
     argv = command->argv;
-    numarg = command->size - 2;
+    totalOperands = command->size - 2;
     a1 = Find(accountArray, argv[1], totalAccounts);
     if (strcmp(a1->password, argv[2]) != 0) { // Check password
         return;
     }
-    if (numarg==4) {
+    if (totalOperands==4) {
         a2 = Find(accountArray, argv[3], totalAccounts);
         funds = strtod(argv[4], NULL);
     } else
-    if (numarg==3) {
+    if (totalOperands==3) {
         a2 = NULL;
         funds = strtod(argv[3], NULL);
     } else {
@@ -39,15 +39,15 @@ void CommandInterpreter(account **accountArray, cmd *command,  int totalAccounts
     #ifdef PART3
     pthread_mutex_lock(&requestCounter.lock);
     #endif
-    if (strcmp(op, "T") == 0) {
+    if (strcmp(operator, "T") == 0) {
         Transfer(a1, a2, funds);
         UpdateTracker(a1, funds);
     } else 
-    if (strcmp(op, "W") == 0) {
+    if (strcmp(operator, "W") == 0) {
         Withdraw(a1, funds);
         UpdateTracker(a1, funds);
     } else
-    if (strcmp(op, "D") == 0) {
+    if (strcmp(operator, "D") == 0) {
         Deposit(a1, funds);
         UpdateTracker(a1, funds);
     }
@@ -79,15 +79,15 @@ void IncrementCount()
 void ObtainAccountLocks(account *a1, account *a2)
 {
     if (a2 == NULL) {
-        pthread_mutex_lock(&a1->ac_lock);
+        pthread_mutex_lock(&a1->lock);
         return;
     }
-    if (a1->order < a2->order) {
-        pthread_mutex_lock(&a1->ac_lock);
-        pthread_mutex_lock(&a2->ac_lock);
+    if (a1->priority < a2->priority) {
+        pthread_mutex_lock(&a1->lock);
+        pthread_mutex_lock(&a2->lock);
     } else {
-        pthread_mutex_lock(&a2->ac_lock);
-        pthread_mutex_lock(&a1->ac_lock);
+        pthread_mutex_lock(&a2->lock);
+        pthread_mutex_lock(&a1->lock);
     }
     return;      
 }
@@ -96,42 +96,42 @@ void ObtainAccountLocks(account *a1, account *a2)
 void ReleaseAccountLocks(account *a1, account *a2)
 {
     if (a2 == NULL) {
-        pthread_mutex_unlock(&a1->ac_lock);
+        pthread_mutex_unlock(&a1->lock);
         return;
     }
-    if (a1->order > a2->order) {
-        pthread_mutex_unlock(&a1->ac_lock);
-        pthread_mutex_unlock(&a2->ac_lock);
+    if (a1->priority > a2->priority) {
+        pthread_mutex_unlock(&a1->lock);
+        pthread_mutex_unlock(&a2->lock);
     } else {
-        pthread_mutex_unlock(&a2->ac_lock);
-        pthread_mutex_unlock(&a1->ac_lock);
+        pthread_mutex_unlock(&a2->lock);
+        pthread_mutex_unlock(&a1->lock);
     }
     return;      
 }
 
 
-void Transfer(account *acc1, account *acc2, double funds)
+void Transfer(account *a1, account *a2, double funds)
 {
-    Withdraw(acc1, funds);
-    Deposit(acc2, funds);
+    Withdraw(a1, funds);
+    Deposit(a2, funds);
 }
 
 
-void Withdraw(account *acc, double funds)
+void Withdraw(account *account, double funds)
 {
-    acc->balance -= funds;
+    account->balance -= funds;
 }
 
 
-void Deposit(account *acc, double funds)
+void Deposit(account *account, double funds)
 {
-    acc->balance += funds;
+    account->balance += funds;
 }
 
 
-void UpdateTracker(account *acc, double funds)
+void UpdateTracker(account *account, double funds)
 {
-    acc->transaction_tracker += funds;
+    account->transactionTracker += funds;
 }
 
 
@@ -141,21 +141,21 @@ void ProcessReward(account **accountArray, int totalAccounts)
     int i;
 
     for (i = 0; i<totalAccounts; i++) {
-        reward = accountArray[i]->transaction_tracker;
-        reward *= accountArray[i]->reward_rate;
+        reward = accountArray[i]->transactionTracker;
+        reward *= accountArray[i]->rewardRate;
         accountArray[i]->balance += reward;
-        accountArray[i]->transaction_tracker = 0;           //< Helgrind error.
+        accountArray[i]->transactionTracker = 0;            //< Helgrind error.
         AppendToFile(accountArray[i]);
     }
 }
 
 
-void AppendToFile(account *acc)
+void AppendToFile(account *account)
 {
     FILE *stream;
 
-    stream = fopen(acc->out_file, "a");
-    fprintf(stream, "balance: %.2f\n", acc->balance);
+    stream = fopen(account->outFile, "a");
+    fprintf(stream, "balance: %.2f\n", account->balance);
     fflush(stream);
     fclose(stream);
 }

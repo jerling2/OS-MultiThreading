@@ -10,38 +10,35 @@
 
 
 // returns a list of accounts. 
-void GetAccounts(FILE *stream, char *filename, account ***acs, int *numac)
+void GetAccounts(FILE *stream, char *filename, account ***accountArray, int *totalAccounts)
 {
-    account *ac;                  // A pointer to an account.
-    char acnumber[17];            // Temp buffer to hold the account number.
+    account *newAccount;          // A pointer to an account.
+    char accountNumber[17];       // Temp buffer to hold the account number.
     char password[9];             // Temp buffer to hold the accound password.
     char outfile[64];             // Temp buffer to hold the outfile path.
     double balance;               // Account balance.
-    double rewardrate;            // Account reward rate.
-    int maxindex = -1;            // Max number of accounts.
-    int cindex = -1;              // Current account.
+    double rewardRate;            // Account reward rate.
+    int maxIndex = -1;            // Max number of accounts.
+    int currentIndex = -1;        // Current account.
     int i = 1;                    // Line number.
     int k = 0;                    // Next expected index number.
 
-    (*numac) = 0;
-    // (*account_hashmap) = NULL;
-    (*acs) = NULL;
-    if (GetFromPattern(stream, "%d", &maxindex) == -1) {
+    (*totalAccounts) = 0;
+    (*accountArray) = NULL;
+    if (GetFromPattern(stream, "%d", &maxIndex) == -1) {
         fprintf(stderr, "%s %s %s:%d\n", 
         ERROR, "missing total # accounts (int)", filename, i);
         goto error;
     }
-    (*acs) = (account **)malloc(sizeof(account *)*maxindex);
-    // hashmap_size = nextPowerOf2(maxindex) * 2;
-    // (*account_hashmap) = initHashmap(hashmap_size);
+    (*accountArray) = (account **)malloc(sizeof(account *)*maxIndex);
     i ++;
-    while (cindex + 1 < maxindex) {
-        if (GetFromPattern(stream, "index %d", &cindex) == -1 || cindex != k) {
+    while (currentIndex + 1 < maxIndex) {
+        if (GetFromPattern(stream, "index %d", &currentIndex) == -1 || currentIndex != k) {
             fprintf(stderr, "%s %s %d' in %s:%d\n", 
             ERROR, "missing 'index", k, filename, i);
             goto error;
         }
-        if (GetFromPattern(stream, "%17s", acnumber) == -1) {
+        if (GetFromPattern(stream, "%17s", accountNumber) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
             ERROR, "missing account number (char *)", filename, i+1);
             goto error;
@@ -56,16 +53,15 @@ void GetAccounts(FILE *stream, char *filename, account ***acs, int *numac)
             ERROR, "missing account balance (double)", filename, i+3);
             goto error;
         }
-        if (GetFromPattern(stream, "%lf", &rewardrate) == -1) {
+        if (GetFromPattern(stream, "%lf", &rewardRate) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
             ERROR, "missing account reward rate (double)", filename, i+4);
             goto error;
         }
-        snprintf(outfile, 64, LOGFILE, cindex);
-        ac = InitAccount(acnumber, password, outfile, balance, rewardrate, k);
-        // insert((*account_hashmap), acnumber, ac);
-        (*acs)[cindex] = ac;
-        (*numac)++;
+        snprintf(outfile, 64, LOGFILE, currentIndex);
+        newAccount = InitAccount(accountNumber, password, outfile, balance, rewardRate, k);
+        (*accountArray)[currentIndex] = newAccount;
+        (*totalAccounts)++;
         i += 5;
         k ++;
     }
@@ -73,8 +69,8 @@ void GetAccounts(FILE *stream, char *filename, account ***acs, int *numac)
 
     error:
     // freeHashmap((*account_hashmap), (void *)freeacc);
-    free(*acs);
-    (*numac) = 0;
+    free(*accountArray);
+    (*totalAccounts) = 0;
     return;
 }
 

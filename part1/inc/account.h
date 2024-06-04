@@ -4,14 +4,14 @@
 #include <pthread.h>
 
 typedef struct account {
-	char *account_number; // 17 bytes
+	char *accountNumber; // 17 bytes
 	char *password; // 9 bytes
-    char *out_file; // 64 bytes
+    char *outFile; // 64 bytes
     double balance;
-    double reward_rate;
-    double transaction_tracker;
-    pthread_mutex_t ac_lock;
-    int order;
+    double rewardRate;
+    double transactionTracker;
+    pthread_mutex_t lock;
+    int priority;
 } account;
 
 account *InitAccount(char *id, char *pass, char *outfile, double balance, 

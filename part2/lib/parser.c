@@ -20,26 +20,26 @@ Joseph Erlinger (jerling2@uoregon.edu)
 cmd *ParseLine (char *line, const char *delim)
 {
     cmd *command;     // Cmd structure to contain the processed input line.
-    char *linedup;    // Duplicate string to preserve the original line.
-    char *saveptr;    // (Use internally by strtok_r)
+    char *lineDup;    // Duplicate string to preserve the original line.
+    char *savePtr;    // (Use internally by strtok_r)
     char *token;      // Pointer to a token returned by strtok_r.
     int i;            // The ith token in the line.
 
     i = 0;
-    linedup = strdup(line);
+    lineDup = strdup(line);
     command = (cmd*)malloc(sizeof(cmd));
-    command->size = CountTokens(linedup, delim);
+    command->size = CountTokens(lineDup, delim);
     command->argv = (char**)malloc(sizeof(char*)*command->size);
-	token = strtok_r(linedup, delim, &saveptr);         // Get the first token.
+	token = strtok_r(lineDup, delim, &savePtr);         // Get the first token.
 	while (token != NULL) {
 		command->argv[i] = strdup(token);
-		token = strtok_r(NULL, delim, &saveptr);
+		token = strtok_r(NULL, delim, &savePtr);
 		i ++;
 	}
     command->argv[i] = NULL;             // Last argument in argv must be null.
-    free(linedup);
+    free(lineDup);
     return command;
-}   /* parseline */
+}   /* ParseLine */
 
 
 /**
@@ -56,11 +56,11 @@ cmd *ParseLine (char *line, const char *delim)
  */
 int CountTokens (char *buf, const char *delim)
 {
-    int tok;      // Number of tokens.
-    int state;    // The current state of the algorithm.
-    int i;        // The ith character in the buf.
+    int totalTokens;    // Number of tokens.
+    int state;          // The current state of the algorithm.
+    int i;              // The ith character in the buf.
 
-    tok = 1;                    // Start at 1 to make space for the null token.
+    totalTokens = 1;                    // Start at 1 to make space for the null token.
     state = 0;
     i = 0;
     strtok (buf, "\n");                    // Strip newline character (if any).
@@ -73,15 +73,15 @@ int CountTokens (char *buf, const char *delim)
         /* State 0: Skip all delimiters */
         if (state == 0 && buf[i] != delim[0]) { // 
             state = 1;
-            tok ++;                                       // Increment tokens.
+            totalTokens ++;                                       // Increment tokens.
         }
         /* State 1: Skip all non-delimiters */
         if (state == 1 && buf[i] == delim[0]) { //  
             state = 0;
         }
     }
-    return tok;
-}   /* numtok */
+    return totalTokens;
+}   /* CountTokens */
 
 
 /**
@@ -100,4 +100,4 @@ void FreeCmd (cmd *command)
     }
     free(command->argv);
     free(command);
-}   /* freecmd */
+}   /* FreeCmd */
