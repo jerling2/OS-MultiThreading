@@ -41,7 +41,7 @@ int main (int argc, char *argv[])
         printf(STREAM, ERROR, filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
-    /* Extract account data and Create datastructures */
+    /* Extract account data */
     getAccounts(stream, filename, &accountArray, &totalAccounts);
     /* Create worker threads */
     for (i=0; i<totalWorkers; i++) {

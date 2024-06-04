@@ -21,12 +21,7 @@ void freeacc(account *acc);
 
 void FreeAccountArray(account **accountArray, int arraySize);
 
-// account *find(hashmap *account_hm, char *account_id);
 account *find(account **accountArray, char *accountID, int arraySize);
-
-// find(accountArray, accountId, size)
-
-// void freeAccountArray();
 
 void print_balances(account **account_array, int numacs);
 

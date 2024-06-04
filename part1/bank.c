@@ -19,7 +19,7 @@ int main (int argc, char *argv[])
     int totalAccounts;
     cmd *request;
 
-    /* Validate input. */
+    /* Validate input */
     if (argc != 2) {
         fprintf(stderr, USUAGE, ERROR, argv[0]);
         exit(EXIT_FAILURE); 
@@ -29,7 +29,7 @@ int main (int argc, char *argv[])
         printf(STREAM, ERROR, filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
-    /* Extract account data and Create datastructures */
+    /* Extract account data */
     getAccounts(stream, filename, &accountArray, &totalAccounts);
     /* Process requests from the input file */
     while ((request = readRequest(stream)) != NULL) {
