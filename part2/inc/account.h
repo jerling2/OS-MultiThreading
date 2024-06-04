@@ -2,7 +2,6 @@
 #define ACCOUNT_H
 
 #include <pthread.h>
-#include "list.h"
 
 typedef struct account {
 	char *account_number; // 17 bytes
@@ -20,7 +19,14 @@ account *initacc(char *id, char *pass, char *outfile, double balance,
 
 void freeacc(account *acc);
 
-account *find(hashmap *account_hm, char *account_id);
+void FreeAccountArray(account **accountArray, int arraySize);
+
+// account *find(hashmap *account_hm, char *account_id);
+account *find(account **accountArray, char *accountID, int arraySize);
+
+// find(accountArray, accountId, size)
+
+// void freeAccountArray();
 
 void print_balances(account **account_array, int numacs);
 

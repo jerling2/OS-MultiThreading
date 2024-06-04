@@ -3,7 +3,6 @@
 
 
 #include <pthread.h>
-#include "list.h"
 #include "account.h"
 #include "parser.h"
 
@@ -29,7 +28,8 @@ typedef struct threadMediator {
 
 #endif
 
-void CommandInterpreter(hashmap *hm, cmd *command); 
+// void CommandInterpreter(hashmap *hm, cmd *command); 
+void CommandInterpreter(account **accountArray, cmd *command,  int totalAccounts);
 
 void ObtainAccountLocks(account *a1, account *a2);
 

@@ -3,13 +3,12 @@
 #include <string.h>
 #include <stdarg.h>
 #include <pthread.h>
-#include "list.h"
 #include "account.h"
 #include "parser.h"
 #include "request.h"
 
 
-void CommandInterpreter(hashmap *hm, cmd *command)
+void CommandInterpreter(account **accountArray, cmd *command,  int totalAccounts)
 {
     char *op;
     char **argv;
@@ -20,12 +19,12 @@ void CommandInterpreter(hashmap *hm, cmd *command)
     op = command->argv[0];
     argv = command->argv;
     numarg = command->size - 2;
-    a1 = find(hm, argv[1]);
+    a1 = find(accountArray, argv[1], totalAccounts);
     if (strcmp(a1->password, argv[2]) != 0) { // Check password
         return;
     }
     if (numarg==4) {
-        a2 = find(hm, argv[3]);
+        a2 = find(accountArray, argv[3], totalAccounts);
         funds = strtod(argv[4], NULL);
     } else
     if (numarg==3) {

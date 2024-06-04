@@ -3,7 +3,6 @@
 #include <string.h>
 #include <pthread.h>
 #include "account.h"
-#include "list.h"
 
 
 account *initacc(char *id, char *pass, char *outfile, double balance, 
@@ -39,24 +38,24 @@ void freeacc(account *acc)
 }
 
 
-account *find(hashmap *account_hm, char *account_id)
+void FreeAccountArray(account **accountArray, int arraySize)
 {
-    unsigned long hashvalue;
-    int index;
-    list *l;
-    node *cnode;
-    account *ac;
-    
-    cnode = NULL;
-    hashvalue = hash((unsigned char *) account_id);
-    index = hashvalue % account_hm->size;
-    if ((l = account_hm->map[index]) == NULL)
-        return NULL;
-    while ((ac=(account *)inorder(l, &cnode))!= NULL) {
-        if (strcmp(ac->account_number, account_id) == 0) {
-            return ac;
-        }
+    int i;
+
+    for(i=0; i<arraySize; i++){
+        freeacc(accountArray[i]);
     }
+    free(accountArray);
+}
+
+account *find(account **accountArray, char *accountID, int arraySize)
+{
+    int i;
+
+    for(i=0; i<arraySize; i++) {
+        if(strcmp(accountArray[i]->account_number, accountID) == 0)
+            return accountArray[i];
+    } 
     return NULL;
 }
 

@@ -4,17 +4,14 @@
 #include <errno.h>
 #include "fileio.h"
 #include "account.h"
-#include "list.h"
 #include "parser.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define LOGFILE "log/account_%d.log"       //< IMPORTANT: directory must exist.
 
 
 // returns a list of accounts. 
-void getAccounts(FILE *stream, char *filename, 
-    hashmap **account_hashmap, account ***acs, int *numac)
+void getAccounts(FILE *stream, char *filename, account ***acs, int *numac)
 {
-    unsigned int hashmap_size;    // Result account hashmap size.
     account *ac;                  // A pointer to an account.
     char acnumber[17];            // Temp buffer to hold the account number.
     char password[9];             // Temp buffer to hold the accound password.
@@ -27,7 +24,7 @@ void getAccounts(FILE *stream, char *filename,
     int k = 0;                    // Next expected index number.
 
     (*numac) = 0;
-    (*account_hashmap) = NULL;
+    // (*account_hashmap) = NULL;
     (*acs) = NULL;
     if (extractitem(stream, "%d", &maxindex) == -1) {
         fprintf(stderr, "%s %s %s:%d\n", 
@@ -35,8 +32,8 @@ void getAccounts(FILE *stream, char *filename,
         goto error;
     }
     (*acs) = (account **)malloc(sizeof(account *)*maxindex);
-    hashmap_size = nextPowerOf2(maxindex) * 2;
-    (*account_hashmap) = initHashmap(hashmap_size);
+    // hashmap_size = nextPowerOf2(maxindex) * 2;
+    // (*account_hashmap) = initHashmap(hashmap_size);
     i ++;
     while (cindex + 1 < maxindex) {
         if (extractitem(stream, "index %d", &cindex) == -1 || cindex != k) {
@@ -66,7 +63,7 @@ void getAccounts(FILE *stream, char *filename,
         }
         snprintf(outfile, 64, LOGFILE, cindex);
         ac = initacc(acnumber, password, outfile, balance, rewardrate, k);
-        insert((*account_hashmap), acnumber, ac);
+        // insert((*account_hashmap), acnumber, ac);
         (*acs)[cindex] = ac;
         (*numac)++;
         i += 5;
@@ -75,7 +72,7 @@ void getAccounts(FILE *stream, char *filename,
     return;
 
     error:
-    freeHashmap((*account_hashmap), (void *)freeacc);
+    // freeHashmap((*account_hashmap), (void *)freeacc);
     free(*acs);
     (*numac) = 0;
     return;

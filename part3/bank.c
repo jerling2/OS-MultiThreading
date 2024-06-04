@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include "account.h"
 #include "fileio.h"
-#include "list.h"
 #include "parser.h"
 #include "request.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
@@ -16,7 +15,6 @@
 void *process_transaction (void *arg);
 void *update_balance (void *arg);
 char *filename;
-hashmap *accountHashmap;
 account **accountArray;
 int totalAccounts;
 int isBankRunning;
@@ -64,7 +62,7 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     /* Extract account data and Create datastructures */
-    getAccounts(stream, filename, &accountHashmap, &accountArray, &totalAccounts);
+    getAccounts(stream, filename, &accountArray, &totalAccounts);
     /* Create the bank thread and Synchronize with it */
     isBankRunning = 1;
     pthread_mutex_lock(&bankSync.lock);
@@ -94,8 +92,7 @@ int main (int argc, char *argv[])
     /* Output data to standard out */
     print_balances(accountArray, totalAccounts);
     /* Release resources */
-    freeHashmap(accountHashmap, (void *)freeacc);
-    free(accountArray);
+    FreeAccountArray(accountArray, totalAccounts);
     fclose(stream);
 }
 
@@ -125,7 +122,7 @@ void *process_transaction (void *arg)
         fgets(line, BUFSIZ, stream);           // skip the next "offset" lines.
     /* Process Requests from the Input File */
     while ((request = readRequest(stream)) != NULL) {
-        CommandInterpreter(accountHashmap, request);
+        CommandInterpreter(accountArray, request, totalAccounts);
         freecmd(request);
         for (i = 0; i<totalWorkers-1; i++)
             fgets(line, BUFSIZ, stream);            // Skip the next N-1 lines.

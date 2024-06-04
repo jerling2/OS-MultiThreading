@@ -4,7 +4,6 @@
 #include <string.h>
 #include "account.h"
 #include "fileio.h"
-#include "list.h"
 #include "parser.h"
 #include "request.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
@@ -16,9 +15,8 @@ int main (int argc, char *argv[])
 {
     FILE *stream;
     char *filename;
-    hashmap *account_hashmap;
-    account **account_array;
-    int numacs;
+    account **accountArray;
+    int totalAccounts;
     cmd *request;
 
     /* Validate input. */
@@ -32,18 +30,17 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     /* Extract account data and Create datastructures */
-    getAccounts(stream, filename, &account_hashmap, &account_array, &numacs);
+    getAccounts(stream, filename, &accountArray, &totalAccounts);
     /* Process requests from the input file */
     while ((request = readRequest(stream)) != NULL) {
-        CommandInterpreter(account_hashmap, request);
+        CommandInterpreter(accountArray, request, totalAccounts);
         freecmd(request);
     }
     /* Apply the reward rate to all balances */
-    ProcessReward(account_array, numacs);
+    ProcessReward(accountArray, totalAccounts);
     /* Output data to standard out */
-    print_balances(account_array, numacs);
+    print_balances(accountArray, totalAccounts);
     /* Free resources */
-    freeHashmap(account_hashmap, (void *)freeacc);
-    free(account_array);
+    FreeAccountArray(accountArray, totalAccounts);
     fclose(stream);
 }
