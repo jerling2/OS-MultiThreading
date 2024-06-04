@@ -42,7 +42,7 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     /* Extract account data */
-    getAccounts(stream, filename, &accountArray, &totalAccounts);
+    GetAccounts(stream, filename, &accountArray, &totalAccounts);
     /* Create worker threads */
     for (i=0; i<totalWorkers; i++) {
         pthread_create(&worker_threads[i], NULL, process_transaction, NULL);
@@ -55,7 +55,7 @@ int main (int argc, char *argv[])
     pthread_create(&banker_thread, NULL, update_balance, NULL);
     pthread_join(banker_thread, NULL);
     /* Output data to standard out */
-    print_balances(accountArray, totalAccounts);
+    PrintBalances(accountArray, totalAccounts);
     /* Release resources */ 
     FreeAccountArray(accountArray, totalAccounts);
     fclose(stream);
@@ -81,9 +81,9 @@ void *process_transaction (void *arg)
     for (i = 0; i<lineOffset; i++)
         fgets(line, BUFSIZ, stream);           // skip the next "offset" lines.
     /* Process Requests from the Input File */
-    while ((request = readRequest(stream)) != NULL) {
+    while ((request = ReadRequest(stream)) != NULL) {
         CommandInterpreter(accountArray, request, totalAccounts);
-        freecmd(request);
+        FreeCmd(request);
         for (i = 0; i<totalWorkers-1; i++)
             fgets(line, BUFSIZ, stream);            // Skip the next N-1 lines.
     }

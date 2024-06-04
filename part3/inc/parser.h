@@ -7,10 +7,10 @@ typedef struct cmd {
     int size;
 } cmd;
 
-cmd *parseline (char *line, const char *delim);
+cmd *ParseLine(char *line, const char *delim);
 
-int numtok (char *buf, const char *delim);
+int CountTokens(char *buf, const char *delim);
 
-void freecmd (cmd *command);
+void FreeCmd(cmd *command);
 
 #endif

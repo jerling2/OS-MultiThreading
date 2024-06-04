@@ -17,7 +17,7 @@ Joseph Erlinger (jerling2@uoregon.edu)
  * @param[in] delimiter to split the line buffer into tokens.
  * @return cmd structure containing tokens parsed from the line buffer.
 */
-cmd *parseline (char *line, const char *delim)
+cmd *ParseLine (char *line, const char *delim)
 {
     cmd *command;     // Cmd structure to contain the processed input line.
     char *linedup;    // Duplicate string to preserve the original line.
@@ -28,7 +28,7 @@ cmd *parseline (char *line, const char *delim)
     i = 0;
     linedup = strdup(line);
     command = (cmd*)malloc(sizeof(cmd));
-    command->size = numtok(linedup, delim);
+    command->size = CountTokens(linedup, delim);
     command->argv = (char**)malloc(sizeof(char*)*command->size);
 	token = strtok_r(linedup, delim, &saveptr);         // Get the first token.
 	while (token != NULL) {
@@ -54,7 +54,7 @@ cmd *parseline (char *line, const char *delim)
  * @param[in] delimeter to distinguish the start/end of a token.
  * @return integer count of the number of tokens in the buffer.
  */
-int numtok (char *buf, const char *delim)
+int CountTokens (char *buf, const char *delim)
 {
     int tok;      // Number of tokens.
     int state;    // The current state of the algorithm.
@@ -91,7 +91,7 @@ int numtok (char *buf, const char *delim)
  * 
  * @param[in] command Pointer to be deallocated.
 */
-void freecmd (cmd *command)
+void FreeCmd (cmd *command)
 {
     int i;    // The ith argument in command's argv.
 

@@ -10,7 +10,7 @@
 
 
 // returns a list of accounts. 
-void getAccounts(FILE *stream, char *filename, account ***acs, int *numac)
+void GetAccounts(FILE *stream, char *filename, account ***acs, int *numac)
 {
     account *ac;                  // A pointer to an account.
     char acnumber[17];            // Temp buffer to hold the account number.
@@ -26,7 +26,7 @@ void getAccounts(FILE *stream, char *filename, account ***acs, int *numac)
     (*numac) = 0;
     // (*account_hashmap) = NULL;
     (*acs) = NULL;
-    if (extractitem(stream, "%d", &maxindex) == -1) {
+    if (GetFromPattern(stream, "%d", &maxindex) == -1) {
         fprintf(stderr, "%s %s %s:%d\n", 
         ERROR, "missing total # accounts (int)", filename, i);
         goto error;
@@ -36,33 +36,33 @@ void getAccounts(FILE *stream, char *filename, account ***acs, int *numac)
     // (*account_hashmap) = initHashmap(hashmap_size);
     i ++;
     while (cindex + 1 < maxindex) {
-        if (extractitem(stream, "index %d", &cindex) == -1 || cindex != k) {
+        if (GetFromPattern(stream, "index %d", &cindex) == -1 || cindex != k) {
             fprintf(stderr, "%s %s %d' in %s:%d\n", 
             ERROR, "missing 'index", k, filename, i);
             goto error;
         }
-        if (extractitem(stream, "%17s", acnumber) == -1) {
+        if (GetFromPattern(stream, "%17s", acnumber) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
             ERROR, "missing account number (char *)", filename, i+1);
             goto error;
         }
-        if (extractitem(stream, "%9s", password) == -1) {
+        if (GetFromPattern(stream, "%9s", password) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
             ERROR, "missing account password (char *)", filename, i+2);
             goto error;
         }
-        if (extractitem(stream, "%lf", &balance) == -1) {
+        if (GetFromPattern(stream, "%lf", &balance) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
             ERROR, "missing account balance (double)", filename, i+3);
             goto error;
         }
-        if (extractitem(stream, "%lf", &rewardrate) == -1) {
+        if (GetFromPattern(stream, "%lf", &rewardrate) == -1) {
             fprintf(stderr, "%s %s in %s:%d\n", 
             ERROR, "missing account reward rate (double)", filename, i+4);
             goto error;
         }
         snprintf(outfile, 64, LOGFILE, cindex);
-        ac = initacc(acnumber, password, outfile, balance, rewardrate, k);
+        ac = InitAccount(acnumber, password, outfile, balance, rewardrate, k);
         // insert((*account_hashmap), acnumber, ac);
         (*acs)[cindex] = ac;
         (*numac)++;
@@ -79,14 +79,14 @@ void getAccounts(FILE *stream, char *filename, account ***acs, int *numac)
 }
 
 
-cmd *readRequest (FILE *stream)
+cmd *ReadRequest (FILE *stream)
 {
     char line[BUFSIZ];    // The line read from a file stream.
     cmd *command;
 
     command = NULL;
     if (fgets(line, BUFSIZ, stream) != NULL) {
-        command = parseline(line, " ");                               
+        command = ParseLine(line, " ");                               
     }
     if (errno != 0) {              
         fprintf(stderr, "%s readcmd(): %s\n", ERROR, strerror(errno));
@@ -95,7 +95,7 @@ cmd *readRequest (FILE *stream)
 }
 
 
-int extractitem(FILE *stream, char *pattern, void *data)
+int GetFromPattern(FILE *stream, char *pattern, void *data)
 {
     char line[BUFSIZ];
     if (fgets(line, BUFSIZ, stream) == NULL)

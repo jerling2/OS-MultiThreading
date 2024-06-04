@@ -14,15 +14,15 @@ typedef struct account {
     int order;
 } account;
 
-account *initacc(char *id, char *pass, char *outfile, double balance, 
+account *InitAccount(char *id, char *pass, char *outfile, double balance, 
     double reward_rate, int order);
 
-void freeacc(account *acc);
+void FreeAccount(account *acc);
 
 void FreeAccountArray(account **accountArray, int arraySize);
 
-account *find(account **accountArray, char *accountID, int arraySize);
+account *Find(account **accountArray, char *accountID, int arraySize);
 
-void print_balances(account **account_array, int numacs);
+void PrintBalances(account **account_array, int numacs);
 
 #endif /* ACCOUNT_H */

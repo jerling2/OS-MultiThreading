@@ -5,7 +5,7 @@
 #include "account.h"
 
 
-account *initacc(char *id, char *pass, char *outfile, double balance, 
+account *InitAccount(char *id, char *pass, char *outfile, double balance, 
     double reward_rate, int order)
 {
     FILE *logfile;
@@ -29,7 +29,7 @@ account *initacc(char *id, char *pass, char *outfile, double balance,
 }
 
 
-void freeacc(account *acc)
+void FreeAccount(account *acc)
 {
     free(acc->account_number);
     free(acc->password);
@@ -43,12 +43,12 @@ void FreeAccountArray(account **accountArray, int arraySize)
     int i;
 
     for(i=0; i<arraySize; i++){
-        freeacc(accountArray[i]);
+        FreeAccount(accountArray[i]);
     }
     free(accountArray);
 }
 
-account *find(account **accountArray, char *accountID, int arraySize)
+account *Find(account **accountArray, char *accountID, int arraySize)
 {
     int i;
 
@@ -60,7 +60,7 @@ account *find(account **accountArray, char *accountID, int arraySize)
 }
 
 
-void print_balances(account **account_array, int numacs)
+void PrintBalances(account **account_array, int numacs)
 {
     int i;
 

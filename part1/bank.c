@@ -30,16 +30,16 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     /* Extract account data */
-    getAccounts(stream, filename, &accountArray, &totalAccounts);
+    GetAccounts(stream, filename, &accountArray, &totalAccounts);
     /* Process requests from the input file */
-    while ((request = readRequest(stream)) != NULL) {
+    while ((request = ReadRequest(stream)) != NULL) {
         CommandInterpreter(accountArray, request, totalAccounts);
-        freecmd(request);
+        FreeCmd(request);
     }
     /* Apply the reward rate to all balances */
     ProcessReward(accountArray, totalAccounts);
     /* Output data to standard out */
-    print_balances(accountArray, totalAccounts);
+    PrintBalances(accountArray, totalAccounts);
     /* Free resources */
     FreeAccountArray(accountArray, totalAccounts);
     fclose(stream);

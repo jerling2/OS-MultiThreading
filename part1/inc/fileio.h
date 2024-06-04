@@ -4,10 +4,10 @@
 #include "parser.h"
 #include "account.h"
 
-void getAccounts(FILE *stream, char *filename, account ***acs, int *numac);
+void GetAccounts(FILE *stream, char *filename, account ***acs, int *numac);
 
-cmd *readRequest(FILE *stream);
+cmd *ReadRequest(FILE *stream);
 
-int extractitem(FILE *stream, char *pattern, void *data);
+int GetFromPattern(FILE *stream, char *pattern, void *data);
 
 #endif /* FILEIO_H */

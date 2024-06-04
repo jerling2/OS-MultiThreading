@@ -19,12 +19,12 @@ void CommandInterpreter(account **accountArray, cmd *command,  int totalAccounts
     op = command->argv[0];
     argv = command->argv;
     numarg = command->size - 2;
-    a1 = find(accountArray, argv[1], totalAccounts);
+    a1 = Find(accountArray, argv[1], totalAccounts);
     if (strcmp(a1->password, argv[2]) != 0) { // Check password
         return;
     }
     if (numarg==4) {
-        a2 = find(accountArray, argv[3], totalAccounts);
+        a2 = Find(accountArray, argv[3], totalAccounts);
         funds = strtod(argv[4], NULL);
     } else
     if (numarg==3) {
