@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include "account.h"
 #include "fileio.h"
-// #include "list.h"
 #include "parser.h"
 #include "request.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
@@ -18,7 +17,7 @@ void *update_balance (void *arg);
 char *filename;
 account **accountArray;
 int totalAccounts;
-int isBankRunning;
+int bankIsRunning;
 int totalWorkers = 10;
 int COUNTER = 0;
 pthread_mutex_t workerLock = PTHREAD_MUTEX_INITIALIZER;

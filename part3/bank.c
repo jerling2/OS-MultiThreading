@@ -17,7 +17,7 @@ void *update_balance (void *arg);
 char *filename;
 account **accountArray;
 int totalAccounts;
-int isBankRunning;
+int bankIsRunning;
 int totalWorkers = 10;
 int COUNTER = 0;
 pthread_barrier_t workerRendezvous;
@@ -47,7 +47,7 @@ mutexCounter requestCounter = {
 int main (int argc, char *argv[]) 
 {
     FILE *stream;
-    pthread_t workerThreads[10];
+    pthread_t workerThreads[totalWorkers];
     pthread_t bankThread;
     int i;
 
@@ -64,13 +64,13 @@ int main (int argc, char *argv[])
     /* Extract account data */
     GetAccounts(stream, filename, &accountArray, &totalAccounts);
     /* Create the bank thread and Synchronize with it */
-    isBankRunning = 1;
+    bankIsRunning = 1;
     pthread_mutex_lock(&bankSync.lock);
     pthread_create(&bankThread, NULL, update_balance, NULL);
     pthread_cond_wait(&bankSync.sig2, &bankSync.lock);
     pthread_mutex_unlock(&bankSync.lock);
     /* Create worker threads */
-    pthread_barrier_init(&workerRendezvous, NULL, 11); 
+    pthread_barrier_init(&workerRendezvous, NULL, totalWorkers + 1); 
     pthread_mutex_lock(&workerSync.lock);
     for (i=0; i<totalWorkers; i++) {
         pthread_create(&workerThreads[i], NULL, process_transaction, NULL);
@@ -86,7 +86,7 @@ int main (int argc, char *argv[])
         pthread_join(workerThreads[i], NULL);
     }
     /* Terminate the bank thread */
-    isBankRunning = 0;
+    bankIsRunning = 0;
     pthread_cond_signal(&bankSync.sig1);
     pthread_join(bankThread, NULL);
     /* Output data to standard out */
@@ -138,7 +138,7 @@ void *update_balance (void *arg)
 {
     pthread_mutex_lock(&bankSync.lock);
     pthread_cond_signal(&bankSync.sig2);
-    while (isBankRunning) {
+    while (bankIsRunning) {
         pthread_cond_wait(&bankSync.sig1, &bankSync.lock);
         pthread_cond_signal(&bankSync.sig2);
         ProcessReward(accountArray, totalAccounts);

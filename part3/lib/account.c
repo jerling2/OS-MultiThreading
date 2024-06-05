@@ -11,11 +11,25 @@ array of accounts.
 #include "account.h"
 
 
+/**
+ * @brief Creates a new account structure.
+ * 
+ * This function initializes and returns a new account structure by taking 
+ * several input parameters and packaging them together.
+ * 
+ * @param[in] id (char *) A unique 17-byte long numerical ID for the account.
+ * @param[in] pass (char *) A 9-byte long string.
+ * @param[in] outfile (char *) A 64-byte file path.
+ * @param[in] balance (double) The initial balance of the account.
+ * @param[in] rewardRate (double) The reward rate for the account.
+ * @param[in] order (int) Determines when the account lock can be aquired.
+ * @return A new account structure and a file specified by the "outfile" param.
+ */
 account *InitAccount(char *id, char *pass, char *outfile, double balance, 
     double rewardRate, int order)
 {
-    FILE *logfile;
-    account *newAccount;
+    FILE *logfile;          // The path of the account's associated log file.
+    account *newAccount;    // A pointer to the newly created account.
 
     newAccount = (account *)malloc(sizeof(account));
     newAccount->accountNumber = strdup(id);
@@ -35,6 +49,11 @@ account *InitAccount(char *id, char *pass, char *outfile, double balance,
 }
 
 
+/**
+ * @brief Free an account structure.
+ * 
+ * @param[in] account (account *). The account to be freed.
+ */
 void FreeAccount(account *account)
 {
     free(account->accountNumber);
@@ -44,6 +63,12 @@ void FreeAccount(account *account)
 }
 
 
+/**
+ * @brief Free an array of accounts.
+ * 
+ * @param[in] accountArray (account **) The array of accounts to be freed.
+ * @param[in] arraySize (int) The size of the account array.
+ */
 void FreeAccountArray(account **accountArray, int arraySize)
 {
     int i;
@@ -55,6 +80,17 @@ void FreeAccountArray(account **accountArray, int arraySize)
 }
 
 
+/**
+ * @brief Lookup an account by its ID/Account Number.
+ * 
+ * This function traverses an account array and returns the account associated
+ * with the 'accountID'.
+ * 
+ * @param[in] accountArray (account **) The array of accounts to search in.
+ * @param[in] accountID (char *) The unique ID/Number of an account.
+ * @param[in] arraySize (int) The size of the accountArray.
+ * @return A pointer to the account associated with the inputted accountID.
+ */
 account *Find(account **accountArray, char *accountID, int arraySize)
 {
     int i;
@@ -67,12 +103,19 @@ account *Find(account **accountArray, char *accountID, int arraySize)
 }
 
 
+/**
+ * @brief Print the balance of each account to standard out.
+ * 
+ * @param[in] accountArray (account **) An array of account structs.
+ * @param[in] arraySize (int) The size of the accountArray.
+ */
 void PrintBalances(account **accountArray, int totalAccounts)
 {
     int i;
 
     for (i = 0; i<totalAccounts; i++)
         printf("%d balance:\t%.2f\n", i, accountArray[i]->balance);
+        fflush(stdout);
     return;
 }
 
