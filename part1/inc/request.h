@@ -28,7 +28,7 @@ typedef struct threadMediator {
 
 #endif
 
-void CommandInterpreter(account **accountArray, cmd *command,  int totalAccounts);
+void CommandInterpreter(account **accountArray, cmd *request,  int totalAccounts);
 
 void ObtainAccountLocks(account *a1, account *a2);
 

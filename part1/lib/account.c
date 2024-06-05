@@ -104,7 +104,7 @@ account *Find(account **accountArray, char *accountID, int arraySize)
 
 
 /**
- * @brief Print the balance of each account to standard out.
+ * @brief Print the balance of each account to standard output.
  * 
  * @param[in] accountArray (account **) An array of account structs.
  * @param[in] arraySize (int) The size of the accountArray.
