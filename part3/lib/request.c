@@ -241,7 +241,7 @@ void ProcessReward(account **accountArray, int totalAccounts)
         reward = accountArray[i]->transactionTracker;
         reward *= accountArray[i]->rewardRate;
         accountArray[i]->balance += reward;
-        accountArray[i]->transactionTracker = 0;            //< Helgrind error.
+        accountArray[i]->transactionTracker = 0;//< Helgrind error. No concern.
         AppendToFile(accountArray[i]);
     }
 }
