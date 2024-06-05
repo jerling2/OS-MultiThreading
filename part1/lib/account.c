@@ -113,9 +113,10 @@ void PrintBalances(account **accountArray, int totalAccounts)
 {
     int i;
 
-    for (i = 0; i<totalAccounts; i++)
+    for (i = 0; i<totalAccounts; i++) {
         printf("%d balance:\t%.2f\n", i, accountArray[i]->balance);
         fflush(stdout);
+    }
     return;
 }
 
