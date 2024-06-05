@@ -62,7 +62,7 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     /* Extract account data */
-    GetAccounts(stream, filename, &accountArray, &totalAccounts);
+    GetAccounts(stream, &accountArray, &totalAccounts);
     /* Create the bank thread and Synchronize with it */
     bankIsRunning = 1;
     pthread_mutex_lock(&bankSync.lock);

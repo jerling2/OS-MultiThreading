@@ -7,7 +7,6 @@ input file.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include "fileio.h"
 #include "account.h"
 #include "parser.h"
@@ -15,8 +14,24 @@ input file.
 #define LOGFILE "log/account_%d.log"       //< IMPORTANT: directory must exist.
 
 
-// returns a list of accounts. 
-void GetAccounts(FILE *stream, char *filename, account ***accountArray, int *totalAccounts)
+/**
+ * @brief Initialize an accountArray with the account data read from an file.
+ * 
+ * This function processes the account information from an input file into a
+ * array of account structures. The account information should be the first
+ * lines of the input file. The input file is assumed to have no errors, as
+ * stated by the project description. As such, this function does not do any
+ * error handling. 
+ * 
+ * Note: This function does not open or close the FILE *. When this function
+ * returns, the FILE * will be pointing to the first request of the input file.
+ * 
+ * @param[in,out ] stream (FILE *) A path to the input file.
+ * @param[in,out] accountArray (account ***) An uninitialized accountArray.
+ * @param[in,out] totalAccounts (int *) An uninitialized integer.
+ * @return An initialized accountArray pointer and totalAccounts pointer.
+ */
+void GetAccounts(FILE *stream, account ***accountArray, int *totalAccounts)
 {
     account *newAccount;          // A pointer to an account.
     char accountNumber[17];       // Temp buffer to hold the account number.
@@ -24,85 +39,71 @@ void GetAccounts(FILE *stream, char *filename, account ***accountArray, int *tot
     char outfile[64];             // Temp buffer to hold the outfile path.
     double balance;               // Account balance.
     double rewardRate;            // Account reward rate.
-    int maxIndex = -1;            // Max number of accounts.
-    int currentIndex = -1;        // Current account.
-    int i = 1;                    // Line number.
-    int k = 0;                    // Next expected index number.
+    int maxIndex;                 // Max number of accounts.
+    int currentIndex;             // Current account.
 
     (*totalAccounts) = 0;
     (*accountArray) = NULL;
-    if (GetFromPattern(stream, "%d", &maxIndex) == -1) {
-        fprintf(stderr, "%s %s %s:%d\n", 
-        ERROR, "missing total # accounts (int)", filename, i);
-        goto error;
-    }
+    GetFromPattern(stream, "%d", &maxIndex);
     (*accountArray) = (account **)malloc(sizeof(account *)*maxIndex);
-    i ++;
     while (currentIndex + 1 < maxIndex) {
-        if (GetFromPattern(stream, "index %d", &currentIndex) == -1 || currentIndex != k) {
-            fprintf(stderr, "%s %s %d' in %s:%d\n", 
-            ERROR, "missing 'index", k, filename, i);
-            goto error;
-        }
-        if (GetFromPattern(stream, "%17s", accountNumber) == -1) {
-            fprintf(stderr, "%s %s in %s:%d\n", 
-            ERROR, "missing account number (char *)", filename, i+1);
-            goto error;
-        }
-        if (GetFromPattern(stream, "%9s", password) == -1) {
-            fprintf(stderr, "%s %s in %s:%d\n", 
-            ERROR, "missing account password (char *)", filename, i+2);
-            goto error;
-        }
-        if (GetFromPattern(stream, "%lf", &balance) == -1) {
-            fprintf(stderr, "%s %s in %s:%d\n", 
-            ERROR, "missing account balance (double)", filename, i+3);
-            goto error;
-        }
-        if (GetFromPattern(stream, "%lf", &rewardRate) == -1) {
-            fprintf(stderr, "%s %s in %s:%d\n", 
-            ERROR, "missing account reward rate (double)", filename, i+4);
-            goto error;
-        }
+        GetFromPattern(stream, "index %d", &currentIndex);
+        GetFromPattern(stream, "%17s", accountNumber);
+        GetFromPattern(stream, "%9s", password);
+        GetFromPattern(stream, "%lf", &balance);
+        GetFromPattern(stream, "%lf", &rewardRate);
         snprintf(outfile, 64, LOGFILE, currentIndex);
-        newAccount = InitAccount(accountNumber, password, outfile, balance, rewardRate, k);
+        newAccount = InitAccount(accountNumber, password, outfile, balance, rewardRate, currentIndex);
         (*accountArray)[currentIndex] = newAccount;
         (*totalAccounts)++;
-        i += 5;
-        k ++;
     }
-    return;
-
-    error:
-    // freeHashmap((*account_hashmap), (void *)freeacc);
-    free(*accountArray);
-    (*totalAccounts) = 0;
-    return;
 }
 
 
+/**
+ * @brief Parse a request from the input file into a cmd structure.
+ * 
+ * This function parses a line from an input file that is pointed to by the
+ * stream pointer into a cmd structure. The line that is parsed should
+ * represent a bank request.
+ * 
+ * Note: All requests are assumed to be correctly formed as outlined by the 
+ * project description. As such, there is no error handling in this function.
+ * 
+ * @param[in,out] stream (FILE *) A file pointer that points to a 'request' line.
+ * @return An cmd structure representing a bank request.
+ */
 cmd *ReadRequest (FILE *stream)
 {
-    char line[BUFSIZ];    // The line read from a file stream.
-    cmd *command;
+    char line[BUFSIZ];    // The line read from the input file.
+    cmd *command;         // The cmd structure representing a bank request.
 
     command = NULL;
-    if (fgets(line, BUFSIZ, stream) != NULL) {
-        command = ParseLine(line, " ");                               
-    }
-    if (errno != 0) {              
-        fprintf(stderr, "%s readcmd(): %s\n", ERROR, strerror(errno));
-    }
+    if (fgets(line, BUFSIZ, stream) != NULL)
+        command = ParseLine(line, " ");                   
     return command;
 }
 
 
-int GetFromPattern(FILE *stream, char *pattern, void *data)
+/**
+ * @brief Initialize some data by scanning it from a file. 
+ * 
+ * This function uses fgets and sscanf to retrieve the next line of a file
+ * and initialize data by scanning the line with a pattern. GetAccounts calls 
+ * this function to translate file data into account struct data.
+ * 
+ * Note: All account lines are assumed to be correct as outlined by the project
+ * description. As such, there is no error handling done by this function.
+ * 
+ * @param[in,out] stream (FILE *) A file pointer that points to a line that is encoding 
+ *                            some account information.
+ * @param[in] pattern (char *) A pattern used by sscanf.
+ * @param[in,out] data (void *) Some data to be initialized by sscanf.
+ */
+void GetFromPattern(FILE *stream, char *pattern, void *data)
 {
     char line[BUFSIZ];
-    if (fgets(line, BUFSIZ, stream) == NULL)
-        return -1;
-    if (sscanf(line, pattern, data) <= 0)
-        return -1;
-    return 1;
+
+    fgets(line, BUFSIZ, stream);
+    sscanf(line, pattern, data);
 }

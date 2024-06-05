@@ -30,7 +30,7 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     /* Extract account data */
-    GetAccounts(stream, filename, &accountArray, &totalAccounts);
+    GetAccounts(stream, &accountArray, &totalAccounts);
     /* Process requests from the input file */
     while ((request = ReadRequest(stream)) != NULL) {
         CommandInterpreter(accountArray, request, totalAccounts);

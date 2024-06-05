@@ -4,7 +4,7 @@
 #include "parser.h"
 #include "account.h"
 
-void GetAccounts(FILE *stream, char *filename, account ***acs, int *numac);
+void GetAccounts(FILE *stream, account ***accountArray, int *totalAccounts);
 
 cmd *ReadRequest(FILE *stream);
 
