@@ -1,3 +1,9 @@
+/*
+Joseph Erlinger (jerling2@uoregon.edu)
+
+This is part4 of the project and serves as the main driver(s) for completing
+the task outlined by the project description.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -10,15 +16,19 @@
 #include "fileio.h"
 #include "parser.h"
 #include "request.h"
-
-
 #define _GNU_SOURCE
+
+// For notifying invalid usuage.
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define USUAGE "%s usuage %s <filename>\n"
 #define STREAM "%s could not open '%s'. %s.\n"
+
+// For supressing the unused parameter warning.
 #define UNUSED(x) (void)(x)
+
+// Configuration for this program.
 #define TOTALWORKERS 10
-#define SAVINGSFILE "savings/account_%d.log"       //< IMPORTANT: savings directory must exist.
+#define SAVINGSFILE "savings/account_%d.log" // Will segfault if directory dne!
 
 
 void PuddlesDriver();
@@ -48,7 +58,8 @@ mutexCounter requestCounter = {
 /*  Worker Thread Globals (private to this process) */
 
 int COUNTER = 0;
-pthread_barrier_t workerRendezvous;
+
+pthread_barrier_t workerRendezvous;  
 
 threadMediator workerSync = {
     .lock = PTHREAD_MUTEX_INITIALIZER,
@@ -75,7 +86,18 @@ int *puddlesIsRunning;
 threadMediator *memorySync;
 
 
-// MAIN THREAD
+/**
+ * @brief The main thread.
+ * 
+ * This function is run by the main thread. The main thread is responsible for
+ * creating the banker thread, worker threads, and the Puddles Bank process. To
+ * do this, the main thread uses sychronization mechanisms to ensure that all
+ * child threads/processes are initialized and are at the correct position 
+ * within their thread of execution before the main thread proceeds. The main
+ * thread is also responsible for overseeing the termination of child threads
+ * and child processes. Additionally, the main thread creates global variables
+ * to be used by child threads or shared across processes.
+ */
 int main (int argc, char *argv[]) 
 {
     FILE *stream;
@@ -94,26 +116,26 @@ int main (int argc, char *argv[])
         printf(STREAM, ERROR, filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
-
-    ////////////////////////////////////////////////////////////////////////
+    /* Extract accounting data */
     GetAccounts(stream, &accountArray, &totalAccounts);
+    /* Create Puddles Savings Bank and Synchronize with it */
     InitializeMemorySyncMechanisms();
     *puddlesIsRunning = 1;
     pthread_mutex_lock(&memorySync->lock);
     if ((pid = fork()) == 0) {
+        /* This code is executed by Puddles Bank */
         fclose(stream);
         PuddlesDriver();
     }
     pthread_cond_wait(&memorySync->sig2, &memorySync->lock);
     pthread_mutex_unlock(&memorySync->lock);
-    ////////////////////////////////////////////////////////////////////////
     /* Create the bank thread and Synchronize with it */
     bankIsRunning = 1;
     pthread_mutex_lock(&bankSync.lock);
     pthread_create(&bankThread, NULL, update_balance, NULL);
     pthread_cond_wait(&bankSync.sig2, &bankSync.lock);
     pthread_mutex_unlock(&bankSync.lock);
-    /* Create worker threads */
+    /* Create worker threads and Syncrhonize with them */
     pthread_barrier_init(&workerRendezvous, NULL, TOTALWORKERS + 1); 
     pthread_mutex_lock(&workerSync.lock);
     for (i=0; i<TOTALWORKERS; i++) {
@@ -149,6 +171,24 @@ int main (int argc, char *argv[])
 }
 
 
+/**
+ * @brief The Puddles Bank Process.
+ * 
+ * This function is run by the Puddles Bank process. The Puddles Bank process
+ * synchronizes with the main process by using synchronization mechanisms that
+ * are in shared memory. The Puddles Bank process starts with copy of the
+ * intial accounting information. It then reduces each account's inital balance
+ * to 20% of its original value, sets all account's reward rate to 2%, and sets
+ * the outfile directory to "savings". Everytime the the banker thread in the
+ * main process applies interest to the Duck Bank accounts, it will tell the 
+ * Puddles Bank process to apply the saving interest to the Puddles Bank
+ * accounts. The main process will wake up the Puddles Bank process when its
+ * time to exit.
+ * 
+ * The saving interest is calculated by: new_balance += old_balance * 0.02
+ * 
+ * Note: the transactionTracker is not used to calculate the savings interest.
+ */
 void PuddlesDriver()
 {
     FILE *savingsFile;    // The path of the account's associated savings file.
@@ -173,7 +213,7 @@ void PuddlesDriver()
     while (*puddlesIsRunning) {
         pthread_cond_wait(&memorySync->sig1, &memorySync->lock);
         pthread_cond_signal(&memorySync->sig2);
-        if (!*puddlesIsRunning) break; // Note: Puddles will exit with the lock.
+        if (!*puddlesIsRunning) break;// Note: Puddles will exit with the lock.
         UpdateSavings(accountArray, totalAccounts);
     }
     /* Print savings to standard output. */
@@ -187,20 +227,29 @@ void PuddlesDriver()
 }
 
 
-// WORKER THREAD
+/**
+ * @brief The Worker Threads.
+ * 
+ * This function is run by multiple worker threads. Each worker thread reads a
+ * portion of the input file. After the total number of requests processed
+ * reaches a threshold, all but one worker threads will fall asleep. The one
+ * worker thread that is awake will wake up the banker thread to do some work.
+ * When the banker thread is awake, all worker threads will be asleep. A worker
+ * thread that reaches the end of the input file will exit of its own volition.
+ */
 void *process_transaction (void *arg)
 {
     UNUSED(arg);
-    FILE *stream;
-    int lineOffset;
-    char line[BUFSIZ];
-    cmd *request;
+    FILE *stream;       // The file pointer of the input file.
+    int lineOffset;     // The portion of the input file this thread will read.
+    char line[BUFSIZ];  // Temp buffer to hold the line read from the file.
+    cmd *request;    // The tokenized request to pass to the CommandInterpreter.
     int i;
     
     /* Synchronize with Main thread */
     pthread_barrier_wait(&workerRendezvous);
     pthread_mutex_lock(&workerSync.lock);
-    lineOffset = COUNTER++;
+    lineOffset = COUNTER++;// Assign this thread's portion of the file to read.
     if (lineOffset == TOTALWORKERS-1)   
         pthread_cond_signal(&workerSync.sig2);     // Last worker signals main.
     pthread_cond_wait(&workerSync.sig1, &workerSync.lock);    // Wait for main.
@@ -224,7 +273,17 @@ void *process_transaction (void *arg)
 }
 
 
-// BANK THREAD
+/**
+ * @brief The Banker Thread.
+ * 
+ * This function is run by a single banker thread. The banker is woken up by a
+ * worker thread when its time to process the rewards for all Duck bank
+ * accounts (i.e. not the Puddles Bank accounts). The main thread will wake up
+ * the banker thread when its time to exit.
+ * 
+ * The interest is calculated by: 
+ *     new_balance += transactionTracker * rewardRate.
+ */
 void *update_balance (void *arg)
 {
     UNUSED(arg);
@@ -233,7 +292,7 @@ void *update_balance (void *arg)
     while (bankIsRunning) {
         pthread_cond_wait(&bankSync.sig1, &bankSync.lock);
         pthread_cond_signal(&bankSync.sig2);
-        if (!bankIsRunning) break; // Note: Bank will exit with the lock.
+        if (!bankIsRunning) break;       // Note: Bank will exit with the lock.
         pthread_mutex_lock(&memorySync->lock);
         pthread_cond_signal(&memorySync->sig1);
         pthread_cond_wait(&memorySync->sig2, &memorySync->lock);
@@ -244,14 +303,42 @@ void *update_balance (void *arg)
 }
 
 
+/**
+ * @brief Initialize synchronization mechanisms within shared memory.
+ * 
+ * This function creates two synchronization mechanisms to help synchronize the
+ * main process and the puddles bank process. The first synchronization tool is
+ * the shared threadMediator. The locks and conditions of the threadMediator
+ * needs to be dynamically initialized with the PTHREAD_PROCESS_SHARED
+ * attribute. The second synchronization tool is the shared boolean flag. This
+ * flag is used by the main process to tell the puddles bank process to exit
+ * out of its main loop.
+ * 
+ * Note: The synchronization tools exist as global variables to both processes.
+ */
 void InitializeMemorySyncMechanisms()
 {
-    pthread_mutexattr_t mutex_attr;
-    pthread_condattr_t cond_attr;
+    pthread_mutexattr_t mutex_attr; // To hold the PTHREAD_PROCESS_SHARED attr.
+    pthread_condattr_t cond_attr;   // To hold the PTHREAD_PROCESS_SHARED attr.
 
     /* Set up the shared memory segment */
-    memorySync = (threadMediator *) mmap (NULL, sizeof(threadMediator), PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
-    puddlesIsRunning = (int *) mmap (NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
+    memorySync = (threadMediator *) mmap (
+        NULL, 
+        sizeof(threadMediator),
+        PROT_READ | PROT_WRITE,
+        MAP_ANON | MAP_SHARED, 
+        -1, 
+        0
+    );
+    puddlesIsRunning = (int *) mmap (
+        NULL, 
+        sizeof(int), 
+        PROT_READ | PROT_WRITE,
+        MAP_ANON | MAP_SHARED,
+        -1,
+        0
+    );
+    /* Verify that shared memory segments were created */
     if (memorySync == MAP_FAILED ||
         puddlesIsRunning == MAP_FAILED) {
         perror("mmap");
