@@ -8,6 +8,7 @@ array of accounts.
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/mman.h>
 #include "account.h"
 
 
@@ -32,9 +33,9 @@ account *InitAccount(char *id, char *pass, char *outfile, double balance,
     account *newAccount;    // A pointer to the newly created account.
 
     newAccount = (account *)malloc(sizeof(account));
-    newAccount->accountNumber = strdup(id);
-    newAccount->password = strdup(pass);
-    newAccount->outFile = strdup(outfile);
+    newAccount->accountNumber = strdup(id); // malloc-d
+    newAccount->password = strdup(pass);  // malloc-d
+    newAccount->outFile = strdup(outfile);  // malloc-d
     newAccount->balance = balance;
     newAccount->rewardRate = rewardRate;
     newAccount->transactionTracker = 0;
@@ -54,12 +55,12 @@ account *InitAccount(char *id, char *pass, char *outfile, double balance,
  * 
  * @param[in] account (account *). The account to be freed.
  */
-void FreeAccount(account *account)
+void FreeAccount(account *acc)
 {
-    free(account->accountNumber);
-    free(account->password);
-    free(account->outFile);
-    free(account);
+    free(acc->accountNumber);
+    free(acc->password);
+    free(acc->outFile);
+    free(acc);
 }
 
 

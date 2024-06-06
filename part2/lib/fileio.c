@@ -7,6 +7,7 @@ input file.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include "fileio.h"
 #include "account.h"
 #include "parser.h"
@@ -44,8 +45,9 @@ void GetAccounts(FILE *stream, account ***accountArray, int *totalAccounts)
 
     (*totalAccounts) = 0;
     (*accountArray) = NULL;
-    GetFromPattern(stream, "%d", &maxIndex);
+    GetFromPattern(stream, "%d", &maxIndex);           // Initializes maxIndex.
     (*accountArray) = (account **)malloc(sizeof(account *)*maxIndex);
+    currentIndex = 0;
     while (currentIndex + 1 < maxIndex) {
         GetFromPattern(stream, "index %d", &currentIndex);
         GetFromPattern(stream, "%17s", accountNumber);
