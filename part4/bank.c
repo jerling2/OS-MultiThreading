@@ -10,6 +10,8 @@
 #include "fileio.h"
 #include "parser.h"
 #include "request.h"
+
+
 #define _GNU_SOURCE
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define USUAGE "%s usuage %s <filename>\n"
@@ -17,6 +19,7 @@
 #define UNUSED(x) (void)(x)
 #define TOTALWORKERS 10
 #define SAVINGSFILE "savings/account_%d.log"       //< IMPORTANT: savings directory must exist.
+
 
 void PuddlesDriver();
 
@@ -26,9 +29,9 @@ void *update_balance (void *arg);
 
 void *process_transaction (void *arg);
 
-int COUNTER = 0;
 
-pthread_barrier_t workerRendezvous;
+//**************************************************//
+/* Accounting Information (private to this process) */
 
 char *filename;
 
@@ -36,19 +39,16 @@ account **accountArray;
 
 int totalAccounts;
 
-int bankIsRunning;
-
-int *puddlesIsRunning;
-
-int *STOPFLAG;
-
-threadMediator *memorySync;
-
-threadMediator bankSync = {
+mutexCounter requestCounter = {
     .lock = PTHREAD_MUTEX_INITIALIZER,
-    .sig1 = PTHREAD_COND_INITIALIZER,
-    .sig2 = PTHREAD_COND_INITIALIZER
+    .count = 0,
 };
+
+//**************************************************//
+/*  Worker Thread Globals (private to this process) */
+
+int COUNTER = 0;
+pthread_barrier_t workerRendezvous;
 
 threadMediator workerSync = {
     .lock = PTHREAD_MUTEX_INITIALIZER,
@@ -56,10 +56,23 @@ threadMediator workerSync = {
     .sig2 = PTHREAD_COND_INITIALIZER
 };
 
-mutexCounter requestCounter = {
+//**************************************************//
+/*  Banker Thread Globals (private to this process) */
+
+int bankIsRunning;
+
+threadMediator bankSync = {
     .lock = PTHREAD_MUTEX_INITIALIZER,
-    .count = 0,
+    .sig1 = PTHREAD_COND_INITIALIZER,
+    .sig2 = PTHREAD_COND_INITIALIZER
 };
+
+//**************************************************//
+/*   PuddlesBank Global (shared to all processes)   */
+
+int *puddlesIsRunning;
+
+threadMediator *memorySync;
 
 
 // MAIN THREAD
@@ -86,7 +99,6 @@ int main (int argc, char *argv[])
     GetAccounts(stream, &accountArray, &totalAccounts);
     InitializeMemorySyncMechanisms();
     *puddlesIsRunning = 1;
-    *STOPFLAG = 0;
     pthread_mutex_lock(&memorySync->lock);
     if ((pid = fork()) == 0) {
         fclose(stream);
@@ -117,7 +129,6 @@ int main (int argc, char *argv[])
     for (i=0; i<TOTALWORKERS; i++) {
         pthread_join(workerThreads[i], NULL);
     }
-    *STOPFLAG = 1;
     /* Terminate the bank thread */
     bankIsRunning = 0;
     pthread_cond_signal(&bankSync.sig1);
@@ -140,33 +151,37 @@ int main (int argc, char *argv[])
 
 void PuddlesDriver()
 {
-    char outfile[64];
-    FILE *savingsFile;
-    int accountIndex;
-    int i;
+    FILE *savingsFile;    // The path of the account's associated savings file.
+    char outfile[64];     // Temp buffer to hold the new outfile path.
+    int i;                // The current account (between 0 and totalAccounts).
 
     pthread_mutex_lock(&memorySync->lock);
     pthread_cond_signal(&memorySync->sig2);
+    /* Modify Account Information to match Savings Account Specification */
     for (i=0;i<totalAccounts;i++) {
-        accountArray[i]->balance *= 0.20;
-        accountArray[i]->rewardRate = 0.02;
-        sscanf(accountArray[i]->outFile, LOGFILE, &accountIndex);
-        snprintf(outfile, 64, SAVINGSFILE, accountIndex);
-        free(accountArray[i]->outFile);
-        accountArray[i]->outFile = strdup(outfile);
-        savingsFile = fopen(outfile, "w"); // Truncate the savings file.
+        accountArray[i]->balance *= 0.20;   // Inital balance = 20% of orignal.
+        accountArray[i]->rewardRate = 0.02;   // Flat reward rate for all accs.
+        /* Change outfile directory to the savings direction */
+        snprintf(outfile, 64, SAVINGSFILE, i);                // format string.
+        free(accountArray[i]->outFile);                   // Free old filepath.
+        accountArray[i]->outFile = strdup(outfile);    // Assign new file path.
+        savingsFile = fopen(outfile, "w");             // Create/truncate file.
         fclose(savingsFile);
     }
+    /* Initialization is complete at this point. */
+    /* Now we enter the main loop */
     while (*puddlesIsRunning) {
         pthread_cond_wait(&memorySync->sig1, &memorySync->lock);
         pthread_cond_signal(&memorySync->sig2);
-        if (*STOPFLAG) break; // Note: Puddles will exit with the lock.
+        if (!*puddlesIsRunning) break; // Note: Puddles will exit with the lock.
         UpdateSavings(accountArray, totalAccounts);
     }
+    /* Print savings to standard output. */
     printf("Puddles Bank Balances:\n");
     fflush(stdout);
     PrintBalances(accountArray, totalAccounts);
     printf("\n");
+    /* Free resources and exit. */
     FreeAccountArray(accountArray, totalAccounts);
     exit(EXIT_SUCCESS);
 }
@@ -218,7 +233,7 @@ void *update_balance (void *arg)
     while (bankIsRunning) {
         pthread_cond_wait(&bankSync.sig1, &bankSync.lock);
         pthread_cond_signal(&bankSync.sig2);
-        if (*STOPFLAG) break; // Note: Bank will exit with the lock.
+        if (!bankIsRunning) break; // Note: Bank will exit with the lock.
         pthread_mutex_lock(&memorySync->lock);
         pthread_cond_signal(&memorySync->sig1);
         pthread_cond_wait(&memorySync->sig2, &memorySync->lock);
@@ -237,10 +252,8 @@ void InitializeMemorySyncMechanisms()
     /* Set up the shared memory segment */
     memorySync = (threadMediator *) mmap (NULL, sizeof(threadMediator), PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
     puddlesIsRunning = (int *) mmap (NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
-    STOPFLAG = (int *) mmap (NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
     if (memorySync == MAP_FAILED ||
-        puddlesIsRunning == MAP_FAILED ||
-        STOPFLAG == MAP_FAILED) {
+        puddlesIsRunning == MAP_FAILED) {
         perror("mmap");
         exit(EXIT_FAILURE);
     }

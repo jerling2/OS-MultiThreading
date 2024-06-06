@@ -7,9 +7,12 @@
 #include "fileio.h"
 #include "parser.h"
 #include "request.h"
+#define _GNU_SOURCE
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define USUAGE "%s usuage %s <filename>\n"
 #define STREAM "%s could not open '%s'. %s.\n"
+#define UNUSED(x) (void)(x)
+#define TOTALWORKERS 10
 
 
 void *process_transaction (void *arg);
@@ -18,7 +21,6 @@ char *filename;
 account **accountArray;
 int totalAccounts;
 int bankIsRunning;
-int totalWorkers = 10;
 int COUNTER = 0;
 pthread_barrier_t workerRendezvous;
 
@@ -47,7 +49,7 @@ mutexCounter requestCounter = {
 int main (int argc, char *argv[]) 
 {
     FILE *stream;
-    pthread_t workerThreads[totalWorkers];
+    pthread_t workerThreads[TOTALWORKERS];
     pthread_t bankThread;
     int i;
 
@@ -70,9 +72,9 @@ int main (int argc, char *argv[])
     pthread_cond_wait(&bankSync.sig2, &bankSync.lock);
     pthread_mutex_unlock(&bankSync.lock);
     /* Create worker threads */
-    pthread_barrier_init(&workerRendezvous, NULL, totalWorkers + 1); 
+    pthread_barrier_init(&workerRendezvous, NULL, TOTALWORKERS + 1); 
     pthread_mutex_lock(&workerSync.lock);
-    for (i=0; i<totalWorkers; i++) {
+    for (i=0; i<TOTALWORKERS; i++) {
         pthread_create(&workerThreads[i], NULL, process_transaction, NULL);
     }
     /* Wait until all workers are created */
@@ -82,7 +84,7 @@ int main (int argc, char *argv[])
     pthread_cond_broadcast(&workerSync.sig1);
     pthread_mutex_unlock(&workerSync.lock);
     /* Wait until all worker threads exited */
-    for (i=0; i<totalWorkers; i++) {
+    for (i=0; i<TOTALWORKERS; i++) {
         pthread_join(workerThreads[i], NULL);
     }
     /* Terminate the bank thread */
@@ -100,6 +102,7 @@ int main (int argc, char *argv[])
 // WORKER THREAD
 void *process_transaction (void *arg)
 {
+    UNUSED(arg);
     FILE *stream;
     int lineOffset;
     char line[BUFSIZ];
@@ -110,7 +113,7 @@ void *process_transaction (void *arg)
     pthread_barrier_wait(&workerRendezvous);
     pthread_mutex_lock(&workerSync.lock);
     lineOffset = COUNTER++;
-    if (lineOffset == totalWorkers-1)   
+    if (lineOffset == TOTALWORKERS-1)   
         pthread_cond_signal(&workerSync.sig2);     // Last worker signals main.
     pthread_cond_wait(&workerSync.sig1, &workerSync.lock);    // Wait for main.
     pthread_mutex_unlock(&workerSync.lock);             // unblock next worker.
@@ -124,7 +127,7 @@ void *process_transaction (void *arg)
     while ((request = ReadRequest(stream)) != NULL) {
         CommandInterpreter(accountArray, request, totalAccounts);
         FreeCmd(request);
-        for (i = 0; i<totalWorkers-1; i++)
+        for (i = 0; i<TOTALWORKERS-1; i++)
             fgets(line, BUFSIZ, stream);            // Skip the next N-1 lines.
     }
     /* Free resources */
@@ -136,6 +139,7 @@ void *process_transaction (void *arg)
 // BANK THREAD
 void *update_balance (void *arg)
 {
+    UNUSED(arg);
     pthread_mutex_lock(&bankSync.lock);
     pthread_cond_signal(&bankSync.sig2);
     while (bankIsRunning) {
@@ -143,4 +147,5 @@ void *update_balance (void *arg)
         pthread_cond_signal(&bankSync.sig2);
         ProcessReward(accountArray, totalAccounts);
     }
+    return NULL;
 }

@@ -6,6 +6,7 @@
 #include "fileio.h"
 #include "parser.h"
 #include "request.h"
+#define _GNU_SOURCE
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define USUAGE "%s usuage %s <filename>\n"
 #define STREAM "%s could not open '%s'. %s.\n"

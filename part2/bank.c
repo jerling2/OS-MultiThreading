@@ -7,9 +7,12 @@
 #include "fileio.h"
 #include "parser.h"
 #include "request.h"
+#define _GNU_SOURCE
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define USUAGE "%s usuage %s <filename>\n"
 #define STREAM "%s could not open '%s'. %s.\n"
+#define UNUSED(x) (void)(x)
+#define TOTALWORKERS 10
 
 
 void *process_transaction (void *arg);
@@ -18,7 +21,6 @@ char *filename;
 account **accountArray;
 int totalAccounts;
 int bankIsRunning;
-int totalWorkers = 10;
 int COUNTER = 0;
 pthread_mutex_t workerLock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -43,11 +45,11 @@ int main (int argc, char *argv[])
     /* Extract account data */
     GetAccounts(stream, &accountArray, &totalAccounts);
     /* Create worker threads */
-    for (i=0; i<totalWorkers; i++) {
+    for (i=0; i<TOTALWORKERS; i++) {
         pthread_create(&worker_threads[i], NULL, process_transaction, NULL);
     }
     /* Wait until all worker threads exited */
-    for (i=0; i<totalWorkers; i++) {
+    for (i=0; i<TOTALWORKERS; i++) {
         pthread_join(worker_threads[i], NULL);
     }
     /* Create the bank thread just for it to call ProcessReward */
@@ -64,6 +66,7 @@ int main (int argc, char *argv[])
 // WORKER THREAD
 void *process_transaction (void *arg)
 {
+    UNUSED(arg);
     FILE *stream;
     int lineOffset;
     char line[BUFSIZ];
@@ -83,7 +86,7 @@ void *process_transaction (void *arg)
     while ((request = ReadRequest(stream)) != NULL) {
         CommandInterpreter(accountArray, request, totalAccounts);
         FreeCmd(request);
-        for (i = 0; i<totalWorkers-1; i++)
+        for (i = 0; i<TOTALWORKERS-1; i++)
             fgets(line, BUFSIZ, stream);            // Skip the next N-1 lines.
     }
     /* Free resources */
@@ -95,5 +98,7 @@ void *process_transaction (void *arg)
 // BANK THREAD
 void *update_balance (void *arg)
 {
+    UNUSED(arg);
     ProcessReward(accountArray, totalAccounts);
+    return NULL;
 }
