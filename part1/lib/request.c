@@ -51,10 +51,10 @@ void CommandInterpreter(account **accountArray, cmd *request,  int totalAccounts
     } else {
         return; // Check request does nothing.
     }
-    #if defined(PART2) || defined(PART3)
+    #if defined(PART2) || defined(PART3) || defined(PART4)
     ObtainAccountLocks(a1, a2);     // Obtain locks based on a priority system.
     #endif
-    #ifdef PART3
+    #if defined(PART3) || defined(PART4)
     pthread_mutex_lock(&requestCounter.lock);
     #endif
     if (strcmp(operator, "T") == 0) {
@@ -69,11 +69,11 @@ void CommandInterpreter(account **accountArray, cmd *request,  int totalAccounts
         Deposit(a1, funds);
         UpdateTracker(a1, funds);
     }
-    #ifdef PART3
+    #if defined(PART3) || defined(PART4)
     IncrementCount();
     pthread_mutex_unlock(&requestCounter.lock);
     #endif
-    #if defined(PART2) || defined(PART3)
+    #if defined(PART2) || defined(PART3) || defined(PART4)
     ReleaseAccountLocks(a1, a2);          // Release locks in reverse priority.
     #endif 
 }
@@ -238,10 +238,33 @@ void ProcessReward(account **accountArray, int totalAccounts)
     int i;           // The current account.
 
     for (i = 0; i<totalAccounts; i++) {
-        reward = accountArray[i]->transactionTracker;
+        reward  = accountArray[i]->transactionTracker;
         reward *= accountArray[i]->rewardRate;
         accountArray[i]->balance += reward;
-        accountArray[i]->transactionTracker = 0;//< Helgrind error. No concern.
+        accountArray[i]->transactionTracker = 0; //< Helgrind error.
+        AppendToFile(accountArray[i]);
+    }
+}
+
+
+/**
+ * @brief Update each account's saving by applying a flat rewardRate on their balance.
+ * 
+ * This function is very similar to ProcessReward with the difference being that here
+ * we do not care about the transactionTracker.
+ * 
+ * @param[in] accountArray (account **).
+ * @param[in] totalAccounts (int).
+*/
+void UpdateSavings(account **accountArray, int totalAccounts)
+{
+    double reward;   // The reward that will be added to the account's balance.
+    int i;           // The current account.
+
+    for (i = 0; i<totalAccounts; i++) {
+        reward = accountArray[i]->balance;
+        reward *= accountArray[i]->rewardRate;
+        accountArray[i]->balance += reward;
         AppendToFile(accountArray[i]);
     }
 }

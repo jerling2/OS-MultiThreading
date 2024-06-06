@@ -12,7 +12,6 @@ input file.
 #include "account.h"
 #include "parser.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
-#define LOGFILE "log/account_%d.log"       //< IMPORTANT: directory must exist.
 
 
 /**

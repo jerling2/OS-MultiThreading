@@ -4,6 +4,8 @@
 #include "parser.h"
 #include "account.h"
 
+#define LOGFILE "log/account_%d.log"  
+
 void GetAccounts(FILE *stream, account ***accountArray, int *totalAccounts);
 
 cmd *ReadRequest(FILE *stream);

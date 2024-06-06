@@ -55,12 +55,12 @@ account *InitAccount(char *id, char *pass, char *outfile, double balance,
  * 
  * @param[in] account (account *). The account to be freed.
  */
-void FreeAccount(account *acc)
+void FreeAccount(account *account)
 {
-    free(acc->accountNumber);
-    free(acc->password);
-    free(acc->outFile);
-    free(acc);
+    free(account->accountNumber);
+    free(account->password);
+    free(account->outFile);
+    free(account);
 }
 
 

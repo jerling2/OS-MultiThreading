@@ -19,7 +19,7 @@ typedef struct threadMediator {
     pthread_cond_t sig2;
 } threadMediator;
 
-#if defined(PART3)
+#if defined(PART3) || defined(PART4)
 
     extern threadMediator bankSync;
     extern mutexCounter requestCounter;
@@ -27,6 +27,7 @@ typedef struct threadMediator {
     void IncrementCount();
 
 #endif
+
 
 void CommandInterpreter(account **accountArray, cmd *request,  int totalAccounts);
 
@@ -43,6 +44,8 @@ void UpdateTracker(account *acc, double funds);
 void Withdraw(account *acc, double funds);
 
 void ProcessReward(account **account_array, int numacs);
+
+void UpdateSavings(account **accountArray, int totalAccounts);
 
 void AppendToFile(account *acc);
 

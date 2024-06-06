@@ -4,6 +4,7 @@
 
 BINARY = bank
 LOGDIR = ./log
+SAVINGSDIR = ./savings
 SRCDIRS = . ./lib
 INCDIRS = . ./inc
 
@@ -15,6 +16,7 @@ CFILES = $(foreach D,$(SRCDIRS),$(wildcard $(D)/*.c))
 OBJECTS = $(patsubst %.c,%.o,$(CFILES)) 
 DEPFILES = $(patsubst %.c,%.d,$(CFILES)) 
 LOGFILES = $(wildcard $(LOGDIR)/*)
+SAVINGFILES = $(wildcard $(SAVINGSDIR)/*)
 
 .PHONY : all clean
 
@@ -24,8 +26,8 @@ $(BINARY) : $(OBJECTS)
 	$(CC) -o $@ $^
 
 %.o : %.c
-	$(CC) -D PART3 $(CFLAGS) -c -o $@ $^
+	$(CC) -D PART4 $(CFLAGS) -c -o $@ $^
 
 clean :
-	@rm -f $(BINARY) $(OBJECTS) $(DEPFILES) $(LOGFILES)
+	@rm -f $(BINARY) $(OBJECTS) $(DEPFILES) $(LOGFILES) $(SAVINGFILES) 
 

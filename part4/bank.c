@@ -14,7 +14,9 @@
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define USUAGE "%s usuage %s <filename>\n"
 #define STREAM "%s could not open '%s'. %s.\n"
+#define UNUSED(x) (void)(x)
 #define TOTALWORKERS 10
+#define SAVINGSFILE "savings/account_%d.log"       //< IMPORTANT: savings directory must exist.
 
 void PuddlesDriver();
 
@@ -37,6 +39,8 @@ int totalAccounts;
 int bankIsRunning;
 
 int *puddlesIsRunning;
+
+int *STOPFLAG;
 
 threadMediator *memorySync;
 
@@ -82,6 +86,7 @@ int main (int argc, char *argv[])
     GetAccounts(stream, &accountArray, &totalAccounts);
     InitializeMemorySyncMechanisms();
     *puddlesIsRunning = 1;
+    *STOPFLAG = 0;
     pthread_mutex_lock(&memorySync->lock);
     if ((pid = fork()) == 0) {
         fclose(stream);
@@ -112,6 +117,7 @@ int main (int argc, char *argv[])
     for (i=0; i<TOTALWORKERS; i++) {
         pthread_join(workerThreads[i], NULL);
     }
+    *STOPFLAG = 1;
     /* Terminate the bank thread */
     bankIsRunning = 0;
     pthread_cond_signal(&bankSync.sig1);
@@ -119,10 +125,10 @@ int main (int argc, char *argv[])
      /* Terminate Puddles Bank */
     *puddlesIsRunning = 0;
     pthread_cond_signal(&memorySync->sig1);
-    fprintf(stderr, "Test\n");
     waitpid(pid, NULL, 0);
-    fprintf(stderr, "Puddles terminated\n");
     /* Output data to standard out */
+    printf("Duck Bank Balances:\n");
+    fflush(stdout);
     PrintBalances(accountArray, totalAccounts);
     /* Release resources */
     munmap(puddlesIsRunning, sizeof(int));
@@ -134,6 +140,9 @@ int main (int argc, char *argv[])
 
 void PuddlesDriver()
 {
+    char outfile[64];
+    FILE *savingsFile;
+    int accountIndex;
     int i;
 
     pthread_mutex_lock(&memorySync->lock);
@@ -141,13 +150,23 @@ void PuddlesDriver()
     for (i=0;i<totalAccounts;i++) {
         accountArray[i]->balance *= 0.20;
         accountArray[i]->rewardRate = 0.02;
+        sscanf(accountArray[i]->outFile, LOGFILE, &accountIndex);
+        snprintf(outfile, 64, SAVINGSFILE, accountIndex);
+        free(accountArray[i]->outFile);
+        accountArray[i]->outFile = strdup(outfile);
+        savingsFile = fopen(outfile, "w"); // Truncate the savings file.
+        fclose(savingsFile);
     }
     while (*puddlesIsRunning) {
         pthread_cond_wait(&memorySync->sig1, &memorySync->lock);
         pthread_cond_signal(&memorySync->sig2);
-        // ProcessReward(accountArray, totalAccounts);
+        if (*STOPFLAG) break; // Note: Puddles will exit with the lock.
+        UpdateSavings(accountArray, totalAccounts);
     }
+    printf("Puddles Bank Balances:\n");
+    fflush(stdout);
     PrintBalances(accountArray, totalAccounts);
+    printf("\n");
     FreeAccountArray(accountArray, totalAccounts);
     exit(EXIT_SUCCESS);
 }
@@ -156,6 +175,7 @@ void PuddlesDriver()
 // WORKER THREAD
 void *process_transaction (void *arg)
 {
+    UNUSED(arg);
     FILE *stream;
     int lineOffset;
     char line[BUFSIZ];
@@ -192,13 +212,20 @@ void *process_transaction (void *arg)
 // BANK THREAD
 void *update_balance (void *arg)
 {
+    UNUSED(arg);
     pthread_mutex_lock(&bankSync.lock);
     pthread_cond_signal(&bankSync.sig2);
     while (bankIsRunning) {
         pthread_cond_wait(&bankSync.sig1, &bankSync.lock);
         pthread_cond_signal(&bankSync.sig2);
+        if (*STOPFLAG) break; // Note: Bank will exit with the lock.
+        pthread_mutex_lock(&memorySync->lock);
+        pthread_cond_signal(&memorySync->sig1);
+        pthread_cond_wait(&memorySync->sig2, &memorySync->lock);
+        pthread_mutex_unlock(&memorySync->lock);
         ProcessReward(accountArray, totalAccounts);
     }
+    return NULL;
 }
 
 
@@ -209,12 +236,11 @@ void InitializeMemorySyncMechanisms()
 
     /* Set up the shared memory segment */
     memorySync = (threadMediator *) mmap (NULL, sizeof(threadMediator), PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
-    if (memorySync == MAP_FAILED) {
-        perror("mmap");
-        exit(EXIT_FAILURE);
-    }
     puddlesIsRunning = (int *) mmap (NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
-    if (puddlesIsRunning == MAP_FAILED) {
+    STOPFLAG = (int *) mmap (NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
+    if (memorySync == MAP_FAILED ||
+        puddlesIsRunning == MAP_FAILED ||
+        STOPFLAG == MAP_FAILED) {
         perror("mmap");
         exit(EXIT_FAILURE);
     }
