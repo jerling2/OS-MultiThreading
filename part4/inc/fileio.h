@@ -1,5 +1,6 @@
 #ifndef FILEIO_H
 #define FILEIO_H
+#include <stdio.h>  // For FILE struct
 #include "parser.h"
 #include "account.h"
 
