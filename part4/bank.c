@@ -241,9 +241,10 @@ void PuddlesDriver()
         DEBUG printf("Puddles Bank received signal, update count = %d\n", puddlesUpdateCount+++1);
     }
     /* Print savings to standard output. */
-    INFO printf("\nPuddles Bank Balances:\n");
+    DEBUG printf("\n");
+    INFO printf("Puddles Bank Balances:\n");
     INFO PrintBalances(accountArray, totalAccounts);
-    INFO printf("\n");
+    DEBUG printf("\n");
     DEBUG printf("Puddles Bank is done. Total updates = %d\n", puddlesUpdateCount);
     /* Free resources and exit. */
     FreeAccountArray(accountArray, totalAccounts);
@@ -332,7 +333,8 @@ void *update_balance (void *arg)
         DEBUG printf("Duck    Bank received signal, update count = %d\n", bankerUpdateCount+++1);
     }
     /* Output data to standard out */
-    INFO printf("\nDuck Bank Balances:\n");
+    DEBUG printf("\n");
+    INFO printf("Duck Bank Balances:\n");
     INFO PrintBalances(accountArray, totalAccounts);
     INFO printf("\n");
     DEBUG printf("Duck Bank is done. Total updates = %d\n", bankerUpdateCount);
