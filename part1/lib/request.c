@@ -281,7 +281,9 @@ void UpdateSavings(account **accountArray, int totalAccounts)
 /**
  * @brief Append an account's balance to the accounts outFile.
  * 
- * ProcessReward calls this function after an account receives its reward.
+ * ProcessReward and UpdateSavings calls this function after an account
+ * receives its reward. That is why I chose to keep this function in this file
+ * instead of being in fileio.c
  * 
  * @param[in] account (account *) Account.
  * @return balance data appended to the account's outFile.
