@@ -42,7 +42,7 @@ the task outlined by the project description.
 
 // Configuration for this program.
 #define TOTALWORKERS 10
-#define SAVINGSFILE "savings/account_%d.log" // Will segfault if directory dne!
+#define SAVINGSFILE "savings/account%d.txt" // Will segfault if directory dne!
 
 
 void PuddlesDriver();
