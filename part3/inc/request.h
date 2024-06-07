@@ -35,18 +35,18 @@ void ObtainAccountLocks(account *a1, account *a2);
 
 void ReleaseAccountLocks(account *a1, account *a2);
 
-void Transfer(account *acc1, account *acc2, double funds);
+void Transfer(account *a1, account *a2, double funds);
 
-void Deposit(account *acc, double funds);
+void Deposit(account *account, double funds);
 
-void UpdateTracker(account *acc, double funds);
+void UpdateTracker(account *account, double funds);
 
-void Withdraw(account *acc, double funds);
+void Withdraw(account *account, double funds);
 
 void ProcessReward(account **account_array, int numacs);
 
 void UpdateSavings(account **accountArray, int totalAccounts);
 
-void AppendToFile(account *acc);
+void AppendToFile(account *account, int flag);
 
 #endif

@@ -250,7 +250,7 @@ void ProcessReward(account **accountArray, int totalAccounts)
         reward *= accountArray[i]->rewardRate;
         accountArray[i]->balance += reward;
         accountArray[i]->transactionTracker = 0; //< Helgrind error.
-        AppendToFile(accountArray[i]);
+        AppendToFile(accountArray[i], 1);
     }
 }
 
@@ -273,7 +273,7 @@ void UpdateSavings(account **accountArray, int totalAccounts)
         reward = accountArray[i]->balance;
         reward *= accountArray[i]->rewardRate;
         accountArray[i]->balance += reward;
-        AppendToFile(accountArray[i]);
+        AppendToFile(accountArray[i], 0);
     }
 }
 
@@ -286,12 +286,13 @@ void UpdateSavings(account **accountArray, int totalAccounts)
  * @param[in] account (account *) Account.
  * @return balance data appended to the account's outFile.
  */
-void AppendToFile(account *account)
+void AppendToFile(account *account, int flag)
 {
     FILE *stream;    // The stream of the account's outFile.
 
     stream = fopen(account->outFile, "a");
-    fprintf(stream, "balance: %.2f\n", account->balance);
+    if (flag) fprintf(stream, "balance: %.2f\n", account->balance);
+    else      fprintf(stream, "savings: %.2f\n", account->balance);
     fflush(stream);
     fclose(stream);
 }
