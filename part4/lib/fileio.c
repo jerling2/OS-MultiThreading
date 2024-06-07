@@ -114,6 +114,29 @@ void GetFromPattern(FILE *stream, char *pattern, void *data)
 
 
 /**
+ * @brief Append an account's balance to the accounts outFile.
+ * 
+ * ProcessReward and UpdateSavings in request.c calls this function after an
+ * account receives its reward.
+ * 
+ * @param[in] account (account *) Account.
+ * @param[in] flag (int) used to indicate either Duck Bank or Puddles Bank.
+ * @return balance data appended to the account's outFile.
+ */
+void AppendToFile(account *account, int flag)
+{
+    FILE *stream;    // The stream of the account's outFile.
+
+    stream = fopen(account->outFile, "a");
+    /* We have to match the expected files EXACTLY */
+    if (flag) fprintf(stream, "Current Balance:\t%.2f\n", account->balance);
+    else      fprintf(stream, "Current Savings Balance  %.2f\n", account->balance);
+    fflush(stream);
+    fclose(stream);
+}
+
+
+/**
  * @brief Write final account balances to an output file.
  * 
  * @param[in] filename (char *) The output file.
@@ -133,6 +156,7 @@ void WriteOutput(char *filename, account **accountArray, int totalAccounts)
     fclose(stream);
 }
 
+
 // Wrapper for WriteOutput
 void WriteFinalBalances(account **accountArray, int totalAccounts)
 {
@@ -143,4 +167,40 @@ void WriteFinalBalances(account **accountArray, int totalAccounts)
 void WriteFinalSavings(account **accountArray, int totalAccounts)
 {
     WriteOutput(OUT_SAVINGS_FILE, accountArray, totalAccounts);
+}
+
+
+// This function is used to match the expected output on Canvas.
+// The styles are inconsistent so this function has a flag to switch between
+// the two different ':' placements.
+void WriteFileHeader(account **accountArray, int totalAccounts, int flag)
+{
+    FILE *stream;
+    int i;
+
+    for (i=0; i<totalAccounts; i++) {
+        stream = fopen(accountArray[i]->outFile, "w");
+        if (flag) fprintf(stream, "account %d:\n", i); // For Duck Bank
+        else fprintf(stream, "account: %d\n", i); // For Puddles Bank
+        fflush(stream);
+        fclose(stream);
+    }
+}
+
+
+// This function is used to match the expected output on Canvas. The file on
+// Canvas includes the initial balance for the savings accounts, but not the
+// regular Duck Bank account. This function is only called by Puddles Bank.
+void WriteInitialSavings(account **accountArray, int totalAccounts)
+{
+    FILE *stream;
+    int i;
+
+    for (i=0; i<totalAccounts; i++) {
+        stream = fopen(accountArray[i]->outFile, "a");
+        fprintf(stream, "Current Savings Balance  %.2f\n", 
+            accountArray[i]->balance);
+        fflush(stream);
+        fclose(stream);
+    }
 }

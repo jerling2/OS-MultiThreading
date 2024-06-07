@@ -47,6 +47,4 @@ void ProcessReward(account **account_array, int numacs);
 
 void UpdateSavings(account **accountArray, int totalAccounts);
 
-void AppendToFile(account *account, int flag);
-
 #endif

@@ -138,6 +138,7 @@ int main (int argc, char *argv[])
     DEBUG printf("-- Part 4 --\n");
     DEBUG printf("main (pid=%u) is extracting the accounting information.\n", getpid());
     GetAccounts(stream, &accountArray, &totalAccounts);
+    WriteFileHeader(accountArray, totalAccounts, 1);
     /* Create Puddles Savings Bank and Synchronize with it */
     DEBUG printf("main is creating Puddles Bank.\n");
     InitializeMemorySyncMechanisms();
@@ -233,6 +234,8 @@ void PuddlesDriver()
         savingsFile = fopen(outfile, "w");             // Create/truncate file.
         fclose(savingsFile);
     }
+    WriteFileHeader(accountArray, totalAccounts, 0);
+    WriteInitialSavings(accountArray, totalAccounts);
     /* Initialization is complete at this point. */
     /* Now we enter the main loop */
     while (*puddlesIsRunning) {

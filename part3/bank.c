@@ -120,6 +120,7 @@ int main (int argc, char *argv[])
     DEBUG printf("-- Part 3 --\n");
     DEBUG printf("main (pid=%u) is extracting the accounting information.\n", getpid());
     GetAccounts(stream, &accountArray, &totalAccounts);
+    WriteFileHeader(accountArray, totalAccounts, 1);
     /* Create the bank thread and Synchronize with it */
     DEBUG printf("main is creating Duck Bank.\n");
     bankIsRunning = 1;

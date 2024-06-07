@@ -93,6 +93,7 @@ int main (int argc, char *argv[])
     DEBUG printf("-- Part 2 --\n");
     DEBUG printf("main (pid=%u) is extracting the accounting information.\n", getpid());
     GetAccounts(stream, &accountArray, &totalAccounts);
+    WriteFileHeader(accountArray, totalAccounts, 1);
     /* Create worker threads */
     DEBUG printf("main is creating worker threads.\n");
     for (i=0; i<TOTALWORKERS; i++) {

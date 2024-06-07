@@ -12,6 +12,7 @@ change in functionality depending on the part#.
 #include "account.h"
 #include "parser.h"
 #include "request.h"
+#include "fileio.h"
 
 // Macro for turning on/off debug messages.
 #ifdef DEBUG_ENABLED
@@ -275,26 +276,4 @@ void UpdateSavings(account **accountArray, int totalAccounts)
         accountArray[i]->balance += reward;
         AppendToFile(accountArray[i], 0);
     }
-}
-
-
-/**
- * @brief Append an account's balance to the accounts outFile.
- * 
- * ProcessReward and UpdateSavings calls this function after an account
- * receives its reward. That is why I chose to keep this function in this file
- * instead of being in fileio.c
- * 
- * @param[in] account (account *) Account.
- * @return balance data appended to the account's outFile.
- */
-void AppendToFile(account *account, int flag)
-{
-    FILE *stream;    // The stream of the account's outFile.
-
-    stream = fopen(account->outFile, "a");
-    if (flag) fprintf(stream, "balance: %.2f\n", account->balance);
-    else      fprintf(stream, "savings: %.2f\n", account->balance);
-    fflush(stream);
-    fclose(stream);
 }

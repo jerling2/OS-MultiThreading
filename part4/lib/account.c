@@ -116,7 +116,7 @@ void PrintBalances(FILE *stream, account **accountArray, int totalAccounts)
     int i;
 
     for (i = 0; i<totalAccounts; i++) {
-        fprintf(stream, "%d balance:\t%.2f\n", i, accountArray[i]->balance);
+        fprintf(stream, "%d balance:\t%.2f\n\n", i, accountArray[i]->balance);
         fflush(stream);
     }
     return;

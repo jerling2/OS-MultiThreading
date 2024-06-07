@@ -65,6 +65,7 @@ int main (int argc, char *argv[])
     DEBUG printf("-- Part 1 --\n");
     DEBUG printf("main (pid=%u) is extracting the accounting information...", getpid());
     GetAccounts(stream, &accountArray, &totalAccounts);
+    WriteFileHeader(accountArray, totalAccounts, 1);
     DEBUG printf("DONE\n");
     /* Process requests from the input file */
     DEBUG printf("main is processing requests...");

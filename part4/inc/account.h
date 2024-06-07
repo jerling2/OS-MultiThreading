@@ -1,6 +1,5 @@
 #ifndef ACCOUNT_H
 #define ACCOUNT_H
-
 #include <pthread.h>
 
 typedef struct account {
