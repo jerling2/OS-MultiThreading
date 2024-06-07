@@ -13,6 +13,12 @@ change in functionality depending on the part#.
 #include "parser.h"
 #include "request.h"
 
+// Macro for turning on/off debug messages.
+#ifdef DEBUG_ENABLED
+#define DEBUG if (1)
+#else
+#define DEBUG if (0)
+#endif
 
 /**
  * @brief Process a request represented by a cmd structure.
@@ -95,6 +101,8 @@ void IncrementCount()
     pthread_mutex_lock(&bankSync.lock);
     requestCounter.count ++;
     if (requestCounter.count == 5000) {
+        DEBUG printf("Reached 5000 request!\n");
+        DEBUG printf("Worker (tid=%lu) signaled bank\n", pthread_self());
         pthread_cond_signal(&bankSync.sig1);
         pthread_cond_wait(&bankSync.sig2, &bankSync.lock);
         requestCounter.count = 0;

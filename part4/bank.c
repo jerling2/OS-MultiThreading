@@ -18,6 +18,20 @@ the task outlined by the project description.
 #include "request.h"
 #define _GNU_SOURCE
 
+// Macro for turning on/off debug messages.
+#ifdef DEBUG_ENABLED
+#define DEBUG if (1)
+#else
+#define DEBUG if (0)
+#endif
+
+// Macro for turning on/off info messages.
+#ifdef INFO_ENABLED
+#define INFO if (1)
+#else
+#define INFO if (0)
+#endif
+
 // For notifying invalid usuage.
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
 #define USUAGE "%s usuage %s <filename>\n"
@@ -53,6 +67,10 @@ mutexCounter requestCounter = {
     .lock = PTHREAD_MUTEX_INITIALIZER,
     .count = 0,
 };
+
+int bankerUpdateCount = 0;
+
+int puddlesUpdateCount = 0;
 
 //**************************************************//
 /*  Worker Thread Globals (private to this process) */
@@ -105,7 +123,7 @@ int main (int argc, char *argv[])
     pthread_t bankThread;
     pid_t pid;
     int i;
-    
+
     /* Validate input. */
     if (argc != 2) {
         fprintf(stderr, USUAGE, ERROR, argv[0]);
@@ -113,12 +131,15 @@ int main (int argc, char *argv[])
     }
     filename = argv[1];
     if ((stream = fopen(filename, "r")) == NULL) {
-        printf(STREAM, ERROR, filename, strerror(errno));
+        fprintf(stderr, STREAM, ERROR, filename, strerror(errno));
         exit(EXIT_FAILURE);
     }
     /* Extract accounting data */
+    DEBUG printf("-- Part 4 --\n");
+    DEBUG printf("main (pid=%u) is extracting the accounting information.\n", getpid());
     GetAccounts(stream, &accountArray, &totalAccounts);
     /* Create Puddles Savings Bank and Synchronize with it */
+    DEBUG printf("main is creating Puddles Bank.\n");
     InitializeMemorySyncMechanisms();
     *puddlesIsRunning = 1;
     pthread_mutex_lock(&memorySync->lock);
@@ -130,12 +151,14 @@ int main (int argc, char *argv[])
     pthread_cond_wait(&memorySync->sig2, &memorySync->lock);
     pthread_mutex_unlock(&memorySync->lock);
     /* Create the bank thread and Synchronize with it */
+    DEBUG printf("main is creating Duck Bank.\n");
     bankIsRunning = 1;
     pthread_mutex_lock(&bankSync.lock);
     pthread_create(&bankThread, NULL, update_balance, NULL);
     pthread_cond_wait(&bankSync.sig2, &bankSync.lock);
     pthread_mutex_unlock(&bankSync.lock);
     /* Create worker threads and Syncrhonize with them */
+    DEBUG printf("main is creating worker threads.\n");
     pthread_barrier_init(&workerRendezvous, NULL, TOTALWORKERS + 1); 
     pthread_mutex_lock(&workerSync.lock);
     for (i=0; i<TOTALWORKERS; i++) {
@@ -146,23 +169,22 @@ int main (int argc, char *argv[])
     pthread_cond_wait(&workerSync.sig2, &workerSync.lock);  
     /* Signal all worker threads to start working */
     pthread_cond_broadcast(&workerSync.sig1);
+    DEBUG printf("main broadcasted a signal to all worker threads.\n");
     pthread_mutex_unlock(&workerSync.lock);
     /* Wait until all worker threads exited */
     for (i=0; i<TOTALWORKERS; i++) {
         pthread_join(workerThreads[i], NULL);
     }
     /* Terminate the bank thread */
+    DEBUG printf("main signaled duck bank to exit.\n");
     bankIsRunning = 0;
     pthread_cond_signal(&bankSync.sig1);
     pthread_join(bankThread, NULL);
-     /* Terminate Puddles Bank */
+    /* Terminate Puddles Bank */
+    DEBUG printf("main signaled puddles bank to exit.\n");
     *puddlesIsRunning = 0;
     pthread_cond_signal(&memorySync->sig1);
     waitpid(pid, NULL, 0);
-    /* Output data to standard out */
-    printf("Duck Bank Balances:\n");
-    fflush(stdout);
-    PrintBalances(accountArray, totalAccounts);
     /* Release resources */
     munmap(puddlesIsRunning, sizeof(int));
     munmap(memorySync, sizeof(threadMediator));
@@ -197,6 +219,7 @@ void PuddlesDriver()
 
     pthread_mutex_lock(&memorySync->lock);
     pthread_cond_signal(&memorySync->sig2);
+    DEBUG printf("Puddles Bank (pid=%u) was created.\n", getpid());
     /* Modify Account Information to match Savings Account Specification */
     for (i=0;i<totalAccounts;i++) {
         accountArray[i]->balance *= 0.20;   // Inital balance = 20% of orignal.
@@ -215,12 +238,13 @@ void PuddlesDriver()
         pthread_cond_signal(&memorySync->sig2);
         if (!*puddlesIsRunning) break;// Note: Puddles will exit with the lock.
         UpdateSavings(accountArray, totalAccounts);
+        DEBUG printf("Puddles Bank received signal, update count = %d\n", puddlesUpdateCount+++1);
     }
     /* Print savings to standard output. */
-    printf("Puddles Bank Balances:\n");
-    fflush(stdout);
-    PrintBalances(accountArray, totalAccounts);
-    printf("\n");
+    INFO printf("\nPuddles Bank Balances:\n");
+    INFO PrintBalances(accountArray, totalAccounts);
+    INFO printf("\n");
+    DEBUG printf("Puddles Bank is done. Total updates = %d\n", puddlesUpdateCount);
     /* Free resources and exit. */
     FreeAccountArray(accountArray, totalAccounts);
     exit(EXIT_SUCCESS);
@@ -250,9 +274,14 @@ void *process_transaction (void *arg)
     pthread_barrier_wait(&workerRendezvous);
     pthread_mutex_lock(&workerSync.lock);
     lineOffset = COUNTER++;// Assign this thread's portion of the file to read.
-    if (lineOffset == TOTALWORKERS-1)   
+    DEBUG printf("worker thread #%d (tid=%lu) was created.\n", lineOffset, pthread_self());
+    if (lineOffset == TOTALWORKERS-1) {
         pthread_cond_signal(&workerSync.sig2);     // Last worker signals main.
+        DEBUG printf("worker thread #%d signaled main.\n", lineOffset);
+    }
+    DEBUG printf("worker thread #%d is waiting.\n", lineOffset);
     pthread_cond_wait(&workerSync.sig1, &workerSync.lock);    // Wait for main.
+    DEBUG printf("worker thread #%d is running!\n", lineOffset);
     pthread_mutex_unlock(&workerSync.lock);             // unblock next worker.
     /* Move the File pointer into position */
     stream = fopen(filename, "r");
@@ -267,6 +296,7 @@ void *process_transaction (void *arg)
         for (i = 0; i<TOTALWORKERS-1; i++)
             fgets(line, BUFSIZ, stream);            // Skip the next N-1 lines.
     }
+    DEBUG printf("worker thread #%d is done.\n", lineOffset);
     /* Free resources */
     fclose(stream);
     return NULL;
@@ -277,7 +307,7 @@ void *process_transaction (void *arg)
  * @brief The Banker Thread.
  * 
  * This function is run by a single banker thread. The banker is woken up by a
- * worker thread when its time to process the rewards for all Duck bank
+ * worker thread when its time to process the rewards for all Duck Bank
  * accounts (i.e. not the Puddles Bank accounts). The main thread will wake up
  * the banker thread when its time to exit.
  * 
@@ -289,6 +319,7 @@ void *update_balance (void *arg)
     UNUSED(arg);
     pthread_mutex_lock(&bankSync.lock);
     pthread_cond_signal(&bankSync.sig2);
+    DEBUG printf("Duck Bank thread (tid=%lu) was created.\n", pthread_self());
     while (bankIsRunning) {
         pthread_cond_wait(&bankSync.sig1, &bankSync.lock);
         pthread_cond_signal(&bankSync.sig2);
@@ -298,7 +329,13 @@ void *update_balance (void *arg)
         pthread_cond_wait(&memorySync->sig2, &memorySync->lock);
         pthread_mutex_unlock(&memorySync->lock);
         ProcessReward(accountArray, totalAccounts);
+        DEBUG printf("Duck    Bank received signal, update count = %d\n", bankerUpdateCount+++1);
     }
+    /* Output data to standard out */
+    INFO printf("\nDuck Bank Balances:\n");
+    INFO PrintBalances(accountArray, totalAccounts);
+    INFO printf("\n");
+    DEBUG printf("Duck Bank is done. Total updates = %d\n", bankerUpdateCount);
     return NULL;
 }
 
