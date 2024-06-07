@@ -185,6 +185,8 @@ int main (int argc, char *argv[])
     *puddlesIsRunning = 0;
     pthread_cond_signal(&memorySync->sig1);
     waitpid(pid, NULL, 0);
+    /* Create "output/output.txt" */
+    WriteFinalBalances(accountArray, totalAccounts);
     /* Release resources */
     munmap(puddlesIsRunning, sizeof(int));
     munmap(memorySync, sizeof(threadMediator));
@@ -243,9 +245,11 @@ void PuddlesDriver()
     /* Print savings to standard output. */
     DEBUG printf("\n");
     INFO printf("Puddles Bank Balances:\n");
-    INFO PrintBalances(accountArray, totalAccounts);
+    INFO PrintBalances(stdout, accountArray, totalAccounts);
     DEBUG printf("\n");
     DEBUG printf("Puddles Bank is done. Total updates = %d\n", puddlesUpdateCount);
+    /* Create "savings/output.txt" */
+    WriteFinalSavings(accountArray, totalAccounts);
     /* Free resources and exit. */
     FreeAccountArray(accountArray, totalAccounts);
     exit(EXIT_SUCCESS);
@@ -335,7 +339,7 @@ void *update_balance (void *arg)
     /* Output data to standard out */
     DEBUG printf("\n");
     INFO printf("Duck Bank Balances:\n");
-    INFO PrintBalances(accountArray, totalAccounts);
+    INFO PrintBalances(stdout, accountArray, totalAccounts);
     INFO printf("\n");
     DEBUG printf("Duck Bank is done. Total updates = %d\n", bankerUpdateCount);
     return NULL;

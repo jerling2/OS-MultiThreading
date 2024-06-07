@@ -150,6 +150,8 @@ int main (int argc, char *argv[])
     bankIsRunning = 0;
     pthread_cond_signal(&bankSync.sig1);
     pthread_join(bankThread, NULL);
+    /* Create "output/output.txt" */
+    WriteFinalBalances(accountArray, totalAccounts);
     /* Release resources */
     FreeAccountArray(accountArray, totalAccounts);
     fclose(stream);
@@ -235,7 +237,7 @@ void *update_balance (void *arg)
     /* Output data to standard out */
     DEBUG printf("\n");
     INFO printf("Duck Bank Balances:\n");
-    INFO PrintBalances(accountArray, totalAccounts);
+    INFO PrintBalances(stdout, accountArray, totalAccounts);
     DEBUG printf("\n");
     DEBUG printf("Duck Bank is done. Total updates = %d\n", bankerUpdateCount);
     return NULL;

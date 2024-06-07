@@ -107,16 +107,17 @@ account *Find(account **accountArray, char *accountID, int arraySize)
 /**
  * @brief Print the balance of each account to standard output.
  * 
+ * @param[in] stream (FILE *) The stream to output the print data.
  * @param[in] accountArray (account **) An array of account structs.
  * @param[in] arraySize (int) The size of the accountArray.
  */
-void PrintBalances(account **accountArray, int totalAccounts)
+void PrintBalances(FILE *stream, account **accountArray, int totalAccounts)
 {
     int i;
 
     for (i = 0; i<totalAccounts; i++) {
-        printf("%d balance:\t%.2f\n", i, accountArray[i]->balance);
-        fflush(stdout);
+        fprintf(stream, "%d balance:\t%.2f\n", i, accountArray[i]->balance);
+        fflush(stream);
     }
     return;
 }

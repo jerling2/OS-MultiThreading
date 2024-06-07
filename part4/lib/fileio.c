@@ -12,7 +12,9 @@ input file.
 #include "account.h"
 #include "parser.h"
 #define ERROR "\x1b[1;31mERROR\x1b[0m"
-#define LOGFILE "output/account%d.txt"  
+#define LOGFILE "output/account%d.txt"
+#define OUT_BALANCES_FILE "output/output.txt"
+#define OUT_SAVINGS_FILE "savings/output.txt"
 
 
 /**
@@ -108,4 +110,37 @@ void GetFromPattern(FILE *stream, char *pattern, void *data)
 
     fgets(line, BUFSIZ, stream);
     sscanf(line, pattern, data);
+}
+
+
+/**
+ * @brief Write final account balances to an output file.
+ * 
+ * @param[in] filename (char *) The output file.
+ * @param[in] accountArray (account **) The account balances to be printed.
+ * @param[in] totalAccounts (int) the size of accountArray.
+ */
+void WriteOutput(char *filename, account **accountArray, int totalAccounts)
+{
+    FILE *stream;
+
+    stream = fopen(filename, "w");
+    if (stream == NULL) {
+        perror("fopen");
+        return;
+    }
+    PrintBalances(stream, accountArray, totalAccounts);
+    fclose(stream);
+}
+
+// Wrapper for WriteOutput
+void WriteFinalBalances(account **accountArray, int totalAccounts)
+{
+    WriteOutput(OUT_BALANCES_FILE, accountArray, totalAccounts);
+}
+
+// Wrapper for WriteOutput
+void WriteFinalSavings(account **accountArray, int totalAccounts)
+{
+    WriteOutput(OUT_SAVINGS_FILE, accountArray, totalAccounts);
 }
