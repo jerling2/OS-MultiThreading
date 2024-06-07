@@ -1,3 +1,9 @@
+/*
+Joseph Erlinger (jerling2@uoregon.edu)
+
+This is part2 of the project and serves as the main driver for completing the
+task outlined by the project description.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
