@@ -230,7 +230,7 @@ void *update_balance (void *arg)
     DEBUG printf("\n");
     INFO printf("Duck Bank Balances:\n");
     INFO PrintBalances(accountArray, totalAccounts);
-    INFO printf("\n");
+    DEBUG printf("\n");
     DEBUG printf("Duck Bank is done. Total updates = %d\n", bankerUpdateCount);
     return NULL;
 }
