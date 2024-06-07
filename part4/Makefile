@@ -6,7 +6,7 @@ BINARY = bank
 LOGDIR = ./output
 SAVINGSDIR = ./savings
 SRCDIRS = . ./lib
-INCDIRS = . ./inc
+INCDIRS = ./inc
 
 CC = gcc
 DEPFLAGS = -MP -MD
