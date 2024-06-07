@@ -9,16 +9,36 @@ INCDIRS = ./inc
 
 CC = gcc
 DEPFLAGS = -MP -MD
-CFLAGS = -Wall -Wextra -g $(foreach D,$(INCDIRS),-I$(D)) $(DEPFLAGS)
+CFLAGS = -Wall -Wextra -g $(VERBOSE_FLAG)  $(foreach D,$(INCDIRS),-I$(D)) $(DEPFLAGS)
 
 CFILES = $(foreach D,$(SRCDIRS),$(wildcard $(D)/*.c))
 OBJECTS = $(patsubst %.c,%.o,$(CFILES)) 
 DEPFILES = $(patsubst %.c,%.d,$(CFILES)) 
 LOGFILES = $(wildcard $(LOGDIR)/*)
 
+DEBUG ?= 1
+INFO ?= 1
+
 .PHONY : all clean
 
 all : $(BINARY)
+
+debug :
+	@$(MAKE) all DEBUG=1 INFO=1
+	
+info :
+	@$(MAKE) all DEBUG=0 INFO=1
+
+silent :
+	@$(MAKE) all DEBUG=0 INFO=0
+
+ifeq ($(DEBUG),1)
+    VERBOSE_FLAG += -DDEBUG_ENABLED
+endif
+
+ifeq ($(INFO),1)
+    VERBOSE_FLAG += -DINFO_ENABLED
+endif
 
 $(BINARY) : $(OBJECTS)
 	$(CC) -o $@ $^
