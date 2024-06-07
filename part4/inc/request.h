@@ -1,17 +1,13 @@
 #ifndef REQUEST_H
 #define REQUEST_H
-
-
 #include <pthread.h>
 #include "account.h"
 #include "parser.h"
-
 
 typedef struct mutexCounter {
     int count;
     pthread_mutex_t lock;
 } mutexCounter;
-
 
 typedef struct threadMediator {
     pthread_mutex_t lock;
@@ -27,7 +23,6 @@ typedef struct threadMediator {
     void IncrementCount();
 
 #endif
-
 
 void CommandInterpreter(account **accountArray, cmd *request,  int totalAccounts);
 

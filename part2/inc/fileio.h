@@ -22,4 +22,5 @@ void WriteFinalSavings(account **accountArray, int totalAccounts);
 void WriteFileHeader(account **accountArray, int totalAccounts, int flag);
 
 void WriteInitialSavings(account **accountArray, int totalAccounts);
+
 #endif /* FILEIO_H */
