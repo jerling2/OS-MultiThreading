@@ -18,24 +18,13 @@ DEPFILES = $(patsubst %.c,%.d,$(CFILES))
 LOGFILES = $(wildcard $(LOGDIR)/*)
 SAVINGFILES = $(wildcard $(SAVINGSDIR)/*)
 
-# If not defined already, DEBUG & INFO = 1.
-DEBUG ?= 1 
+DEBUG ?= 1
 INFO ?= 1
 
 .PHONY : all clean
 
 all : $(BINARY)
 
-$(BINARY) : $(OBJECTS)
-	$(CC) -o $@ $^
-
-%.o : %.c
-	$(CC) -D PART4 $(CFLAGS) -c -o $@ $^
-
-clean :
-	@rm -f $(BINARY) $(OBJECTS) $(DEPFILES) $(LOGFILES) $(SAVINGFILES) 
-
-# Settings for setting the level of verbosity.
 debug :
 	@$(MAKE) all DEBUG=1 INFO=1
 	
@@ -52,4 +41,13 @@ endif
 ifeq ($(INFO),1)
     VERBOSE_FLAG += -DINFO_ENABLED
 endif
+
+$(BINARY) : $(OBJECTS)
+	$(CC) -o $@ $^
+
+%.o : %.c
+	$(CC) -D PART4 $(CFLAGS) -c -o $@ $^
+
+clean :
+	@rm -f $(BINARY) $(OBJECTS) $(DEPFILES) $(LOGFILES) $(SAVINGFILES) 
 
