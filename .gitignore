@@ -3,6 +3,7 @@
 sample
 share
 tests
+*.pdf
 
 # Visual Studio Code
 .vscode/
