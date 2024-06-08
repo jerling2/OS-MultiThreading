@@ -23,6 +23,6 @@ void FreeAccountArray(account **accountArray, int arraySize);
 
 account *Find(account **accountArray, char *accountID, int arraySize);
 
-void PrintBalances(FILE *stream, account **accountArray, int totalAccounts);
+void PrintBalances(FILE *stream, account **accountArray, int totalAccounts, int flag);
 
 #endif /* ACCOUNT_H */

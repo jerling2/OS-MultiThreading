@@ -110,13 +110,15 @@ account *Find(account **accountArray, char *accountID, int arraySize)
  * @param[in] stream (FILE *) The stream to output the print data.
  * @param[in] accountArray (account **) An array of account structs.
  * @param[in] arraySize (int) The size of the accountArray.
+ * @param[in] flag (int) used to switch between double newline or single newline.
  */
-void PrintBalances(FILE *stream, account **accountArray, int totalAccounts)
+void PrintBalances(FILE *stream, account **accountArray, int totalAccounts, int flag)
 {
     int i;
 
     for (i = 0; i<totalAccounts; i++) {
-        fprintf(stream, "%d balance:\t%.2f\n\n", i, accountArray[i]->balance);
+        if (flag) fprintf(stream, "%d balance:\t%.2f\n\n", i, accountArray[i]->balance);
+        else fprintf(stream, "%d balance:\t%.2f\n", i, accountArray[i]->balance);
         fflush(stream);
     }
     return;

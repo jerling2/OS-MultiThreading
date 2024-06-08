@@ -248,7 +248,7 @@ void PuddlesDriver()
     /* Print savings to standard output. */
     DEBUG printf("\n");
     INFO printf("Puddles Bank Balances:\n");
-    INFO PrintBalances(stdout, accountArray, totalAccounts);
+    INFO PrintBalances(stdout, accountArray, totalAccounts, 0);
     DEBUG printf("\n");
     DEBUG printf("Puddles Bank is done. Total updates = %d\n", puddlesUpdateCount);
     /* Create "savings/output.txt" */
@@ -342,7 +342,7 @@ void *update_balance (void *arg)
     /* Output data to standard out */
     DEBUG printf("\n");
     INFO printf("Duck Bank Balances:\n");
-    INFO PrintBalances(stdout, accountArray, totalAccounts);
+    INFO PrintBalances(stdout, accountArray, totalAccounts, 0);
     INFO printf("\n");
     DEBUG printf("Duck Bank is done. Total updates = %d\n", bankerUpdateCount);
     return NULL;

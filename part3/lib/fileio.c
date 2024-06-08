@@ -152,7 +152,7 @@ void WriteOutput(char *filename, account **accountArray, int totalAccounts)
         perror("fopen");
         return;
     }
-    PrintBalances(stream, accountArray, totalAccounts);
+    PrintBalances(stream, accountArray, totalAccounts, 1);
     fclose(stream);
 }
 

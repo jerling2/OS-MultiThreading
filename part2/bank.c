@@ -110,7 +110,7 @@ int main (int argc, char *argv[])
     /* Output data to standard out */
     DEBUG printf("\n");
     INFO printf("Duck Bank Balances:\n");
-    INFO PrintBalances(stdout, accountArray, totalAccounts);
+    INFO PrintBalances(stdout, accountArray, totalAccounts, 0);
     /* Create "output/output.txt" */
     WriteFinalBalances(accountArray, totalAccounts);
     /* Release resources */ 
