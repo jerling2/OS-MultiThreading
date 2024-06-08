@@ -63,7 +63,7 @@ int CountTokens (char *buf, const char *delim)
     int state;          // The current state of the algorithm.
     int i;              // The ith character in the buf.
 
-    totalTokens = 1;                    // Start at 1 to make space for the null token.
+    totalTokens = 1;            // Start at 1 to make space for the null token.
     state = 0;
     i = 0;
     strtok (buf, "\n");                    // Strip newline character (if any).
@@ -76,7 +76,7 @@ int CountTokens (char *buf, const char *delim)
         /* State 0: Skip all delimiters */
         if (state == 0 && buf[i] != delim[0]) { // 
             state = 1;
-            totalTokens ++;                                       // Increment tokens.
+            totalTokens ++;                                // Increment tokens.
         }
         /* State 1: Skip all non-delimiters */
         if (state == 1 && buf[i] == delim[0]) { //  
